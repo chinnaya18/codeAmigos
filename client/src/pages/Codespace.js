@@ -210,7 +210,7 @@ export default function Codespace() {
         {active && (
           <div style={styles.footer}>
             <button style={styles.saveBtn} onClick={saveFile}>
-              Save
+              Push
             </button>
             <button style={styles.pullBtn} onClick={pullFile}>
               Pull
