@@ -1,3 +1,4 @@
+// client/src/App.js
 import React, { useContext } from "react";
 import {
   BrowserRouter as Router,
@@ -17,9 +18,8 @@ import Codespace from "./pages/Codespace";
 import NewRepo from "./pages/NewRepo";
 import NewFile from "./pages/NewFile";
 import AdminPanel from "./pages/AdminPanel";
-import Profile from "./pages/Profile"; 
+import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
-
 
 import { AuthContext } from "./context/AuthContext";
 
@@ -32,15 +32,17 @@ function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
+
         <Route path="/home" element={<Home />} />
-        <Route path="/profile" element={<Profile />} /> {/* ✅ FIXED */}
+        <Route path="/profile" element={<Profile />} />
+
         <Route path="/repo/:repoId" element={<RepoViewer />} />
         <Route path="/repo/:repoId/file/:fileId" element={<FileViewer />} />
         <Route path="/repo/:repoId/file/new" element={<NewFile />} />
         <Route path="/newrepo" element={<NewRepo />} />
         <Route path="/codespace/:repoId" element={<Codespace />} />
         <Route path="/notifications" element={<Notifications />} />
-        {/* ADMIN ROUTE */}
+
         <Route
           path="/admin"
           element={

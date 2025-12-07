@@ -18,12 +18,7 @@ export default function SignIn() {
       const res = await API.post("/auth/signin", form);
 
       login(res.data.token, res.data.user);
-
-      if (res.data.user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/home");
-      }
+      navigate(res.data.user.role === "admin" ? "/admin" : "/home");
     } catch (e) {
       setErr(e.response?.data?.msg || "Invalid Login");
     }
@@ -31,20 +26,20 @@ export default function SignIn() {
 
   return (
     <div style={styles.page}>
-      {/* Glowing background blobs */}
+      {/* Floating Background Glow Elements */}
       <div style={{ ...styles.blob, ...styles.blob1 }}></div>
       <div style={{ ...styles.blob, ...styles.blob2 }}></div>
       <div style={{ ...styles.blob, ...styles.blob3 }}></div>
 
       {/* Header */}
       <header style={styles.header}>
-        <p style={{ margin: 0, color: "#a0a0a0" }}>Don't have an account?</p>
+        <p style={{ margin: 0, opacity: 0.7 }}>Don't have an account?</p>
         <button style={styles.signUpTopBtn} onClick={() => navigate("/signup")}>
           Sign Up
         </button>
       </header>
 
-      {/* Main Sign-In Box */}
+      {/* Login Card */}
       <div style={styles.card}>
         <h2 style={styles.heading}>Sign In</h2>
 
@@ -59,6 +54,7 @@ export default function SignIn() {
               setForm({ ...form, emailOrUsername: e.target.value })
             }
             required
+            placeholder="Enter email or username"
           />
 
           <label style={styles.label}>Password</label>
@@ -68,42 +64,51 @@ export default function SignIn() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
+            placeholder="Enter password"
           />
 
           <button type="submit" style={styles.signInBtn}>
             Sign In
           </button>
         </form>
+
+        <p
+          style={styles.forgotLink}
+          onClick={() => alert("Forgot password feature pending…")}
+        >
+          Forgot Password?
+        </p>
       </div>
 
       {/* Footer */}
       <footer style={styles.footer}>
-        © 2025 MergeWorks. All rights reserved.
+        © {new Date().getFullYear()} CodeAmigos. All rights reserved.
       </footer>
     </div>
   );
 }
 
-/* ---------------------------------------------------------
-   INLINE CSS STYLES
---------------------------------------------------------- */
+/* ---------- Responsive Inline Styling ---------- */
 const styles = {
   page: {
-    background: "#0a0f17",
+    background: "#090d16",
     color: "#fff",
     minHeight: "100vh",
     fontFamily: "Poppins, sans-serif",
     position: "relative",
-    overflowX: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "20px",
   },
 
   header: {
+    width: "100%",
     display: "flex",
-    justifyContent: "end",
-    gap: "12px",
-    padding: "20px 30px",
-    position: "relative",
+    justifyContent: "flex-end",
+    gap: "10px",
     zIndex: 10,
+    maxWidth: "1080px",
   },
 
   signUpTopBtn: {
@@ -114,61 +119,70 @@ const styles = {
     borderRadius: "8px",
     fontWeight: "600",
     cursor: "pointer",
-    transition: "0.3s",
+    transition: "0.2s",
   },
 
   card: {
-    width: "380px",
-    margin: "80px auto",
-    padding: "40px",
-    background: "rgba(20, 26, 35, 0.6)",
+    width: "90%",
+    maxWidth: "380px",
+    marginTop: "60px",
+    padding: "35px",
+    background: "rgba(20, 26, 35, 0.7)",
     borderRadius: "16px",
     border: "1px solid rgba(88, 166, 255, 0.25)",
-    boxShadow: "0 0 25px rgba(88, 166, 255, 0.3)",
-    backdropFilter: "blur(10px)",
-    position: "relative",
-    zIndex: 10,
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 0 20px rgba(88, 166, 255, 0.25)",
   },
 
   heading: {
     textAlign: "center",
     fontSize: "1.9rem",
-    fontWeight: "700",
+    fontWeight: 700,
+    marginBottom: "20px",
     background: "linear-gradient(90deg, #58a6ff, #9d79ff)",
     WebkitBackgroundClip: "text",
     color: "transparent",
   },
 
   label: {
-    marginTop: "12px",
+    marginTop: "10px",
     fontWeight: "600",
-    display: "block",
+    fontSize: "0.9rem",
   },
 
   input: {
     width: "100%",
-    padding: "10px",
-    marginTop: "5px",
-    background: "rgba(255,255,255,0.06)",
+    padding: "12px",
+    marginTop: "6px",
+    background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(88, 166, 255, 0.35)",
-    color: "#fff",
     borderRadius: "8px",
+    color: "#fff",
     outline: "none",
     fontSize: "15px",
   },
 
   signInBtn: {
     width: "100%",
-    marginTop: "22px",
+    marginTop: "20px",
     padding: "12px",
-    background: "linear-gradient(90deg, #3a62ff, #9d3aff)",
+    background: "linear-gradient(90deg, #3a62ff, #903aff)",
     border: "none",
     borderRadius: "10px",
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: 600,
     fontSize: "1rem",
     cursor: "pointer",
-    transition: "0.3s",
+    transition: "0.2s",
+  },
+
+  forgotLink: {
+    marginTop: "15px",
+    textAlign: "center",
+    fontSize: "0.85rem",
+    color: "#7db0ff",
+    cursor: "pointer",
+    textDecoration: "underline",
   },
 
   error: {
@@ -181,34 +195,26 @@ const styles = {
   },
 
   footer: {
-    textAlign: "center",
-    marginTop: "40px",
+    marginTop: "auto",
+    padding: "15px 0",
     color: "#777",
+    fontSize: "0.85rem",
+    textAlign: "center",
   },
 
+  /* Background Glow Shapes */
   blob: {
     position: "fixed",
-    width: "350px",
-    height: "350px",
+    width: "320px",
+    height: "320px",
     borderRadius: "50%",
     filter: "blur(120px)",
-    zIndex: 0,
     opacity: 0.55,
-    animation: "float 10s infinite ease-in-out",
+    zIndex: 0,
+    animation: "float 12s infinite ease-in-out",
   },
 
-  blob1: { background: "#3a62ff", top: "5%", left: "10%" },
-  blob2: {
-    background: "#9d3aff",
-    bottom: "15%",
-    right: "10%",
-    animationDelay: "3s",
-  },
-  blob3: {
-    background: "#00d2ff",
-    top: "55%",
-    left: "60%",
-    animationDelay: "5s",
-  },
+  blob1: { background: "#396cff", top: "-5%", left: "-5%" },
+  blob2: { background: "#7d3aff", bottom: "10%", right: "-10%" },
+  blob3: { background: "#00d2ff", top: "50%", left: "60%" },
 };
-  

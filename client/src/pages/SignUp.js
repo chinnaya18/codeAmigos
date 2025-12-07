@@ -20,15 +20,11 @@ export default function SignUp() {
     setErr("");
 
     if (!form.username || !form.email || form.password.length < 6) {
-      setErr(
-        "All fields are required. Password must be at least 6 characters."
-      );
-      return;
+      return setErr("Fill all fields. Password must be at least 6 characters.");
     }
 
     try {
       const res = await API.post("/auth/signup", form);
-
       login(res.data.token, res.data.user);
       navigate("/signin");
     } catch (error) {
@@ -38,20 +34,20 @@ export default function SignUp() {
 
   return (
     <div style={styles.page}>
-      {/* Background glow blobs */}
-      <div style={{ ...styles.blob, ...styles.blob1 }}></div>
-      <div style={{ ...styles.blob, ...styles.blob2 }}></div>
-      <div style={{ ...styles.blob, ...styles.blob3 }}></div>
+      {/* Neon Glow Blobs */}
+      <div style={{ ...styles.blob, ...styles.blob1 }} />
+      <div style={{ ...styles.blob, ...styles.blob2 }} />
+      <div style={{ ...styles.blob, ...styles.blob3 }} />
 
       {/* Header */}
       <header style={styles.header}>
-        <p style={{ margin: 0, color: "#a0a0a0" }}>Already have an account?</p>
-        <button style={styles.signInTopBtn} onClick={() => navigate("/signin")}>
+        <p style={{ margin: 0, opacity: 0.7 }}>Already have an account?</p>
+        <button style={styles.switchBtn} onClick={() => navigate("/signin")}>
           Sign In
         </button>
       </header>
 
-      {/* Main Card */}
+      {/* Main Form Card */}
       <div style={styles.card}>
         <h2 style={styles.heading}>Create Account</h2>
 
@@ -61,163 +57,178 @@ export default function SignUp() {
           <label style={styles.label}>Username</label>
           <input
             style={styles.input}
+            placeholder="Choose a username"
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
-            required
           />
 
           <label style={styles.label}>Email</label>
           <input
             style={styles.input}
+            type="email"
+            placeholder="your@email.com"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
           />
 
           <label style={styles.label}>Password</label>
           <input
             type="password"
+            placeholder="At least 6 characters"
             style={styles.input}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
           />
 
           <button type="submit" style={styles.signUpBtn}>
             Create Account
           </button>
         </form>
+
+        {/* Optional Text */}
+        <p style={styles.linkText} onClick={() => navigate("/signin")}>
+          Already registered? Sign In
+        </p>
       </div>
 
       {/* Footer */}
       <footer style={styles.footer}>
-        © 2025 MergeWorks. All rights reserved.
+        © {new Date().getFullYear()} CodeAmigos. All rights reserved.
       </footer>
     </div>
   );
 }
 
-/* ---------------------------------------------------------
-   INLINE CSS STYLES — same UI theme as SignIn.js
---------------------------------------------------------- */
+/* ---------- Shared Responsive UI Styling ---------- */
 const styles = {
   page: {
-    background: "#0a0f17",
-    color: "#fff",
+    background: "#090f18",
     minHeight: "100vh",
+    color: "#fff",
     fontFamily: "Poppins, sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
     position: "relative",
-    overflowX: "hidden",
+    padding: "20px",
   },
 
   header: {
+    width: "100%",
+    maxWidth: "1080px",
     display: "flex",
-    justifyContent: "end",
-    gap: "12px",
-    padding: "20px 30px",
+    justifyContent: "flex-end",
+    gap: "10px",
+    zIndex: 10,
   },
 
-  signInTopBtn: {
+  switchBtn: {
     background: "transparent",
     color: "#58a6ff",
     border: "1px solid #58a6ff",
     padding: "8px 18px",
     borderRadius: "8px",
-    fontWeight: "600",
+    fontWeight: 600,
     cursor: "pointer",
-    transition: "0.3s",
+    transition: "0.2s",
   },
 
   card: {
-    width: "380px",
-    margin: "70px auto",
-    padding: "40px",
-    background: "rgba(20, 26, 35, 0.6)",
+    width: "90%",
+    maxWidth: "380px",
+    marginTop: "50px",
+    padding: "35px",
+    background: "rgba(20, 26, 35, 0.65)",
     borderRadius: "16px",
     border: "1px solid rgba(88,166,255,0.25)",
-    boxShadow: "0 0 25px rgba(88,166,255,0.3)",
-    backdropFilter: "blur(10px)",
+    backdropFilter: "blur(11px)",
+    boxShadow: "0 0 22px rgba(88,166,255,0.25)",
+    zIndex: 10,
   },
 
   heading: {
     textAlign: "center",
     fontSize: "1.9rem",
-    fontWeight: "700",
+    fontWeight: 700,
+    marginBottom: "18px",
     background: "linear-gradient(90deg, #58a6ff, #9d79ff)",
     WebkitBackgroundClip: "text",
     color: "transparent",
   },
 
   label: {
-    marginTop: "12px",
-    fontWeight: "600",
-    display: "block",
+    marginTop: "10px",
+    fontWeight: 600,
+    fontSize: "0.9rem",
   },
 
   input: {
     width: "100%",
-    padding: "10px",
-    marginTop: "5px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(88, 166, 255, 0.35)",
-    color: "#fff",
+    padding: "12px",
+    marginTop: "6px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(88,166,255,0.35)",
     borderRadius: "8px",
-    outline: "none",
+    color: "#fff",
     fontSize: "15px",
+    outline: "none",
   },
 
   signUpBtn: {
     width: "100%",
-    marginTop: "22px",
+    marginTop: "20px",
     padding: "12px",
-    background: "linear-gradient(90deg, #3a62ff, #9d3aff)",
     border: "none",
     borderRadius: "10px",
-    color: "#fff",
-    fontWeight: "600",
+    fontWeight: 600,
     fontSize: "1rem",
+    color: "#fff",
+    background: "linear-gradient(90deg, #3a62ff, #903aff)",
     cursor: "pointer",
-    transition: "0.3s",
+    transition: "0.25s",
   },
 
   error: {
-    background: "#ff4d4f33",
-    color: "#ff7b72",
+    background: "#ff4d4f22",
+    border: "1px solid #ff6b6b",
     padding: "8px",
     borderRadius: "6px",
     textAlign: "center",
+    color: "#ff7b72",
+    marginBottom: "10px",
+    fontSize: "0.85rem",
+  },
+
+  linkText: {
+    marginTop: "12px",
+    textAlign: "center",
+    color: "#7db0ff",
+    textDecoration: "underline",
+    cursor: "pointer",
     fontSize: "0.85rem",
   },
 
   footer: {
+    marginTop: "auto",
+    padding: "15px 0",
+    color: "#888",
+    fontSize: "0.9rem",
     textAlign: "center",
-    marginTop: "40px",
-    color: "#777",
   },
 
-  /* Glowing blobs */
+  /* Background Glow Blobs */
   blob: {
     position: "fixed",
-    width: "350px",
-    height: "350px",
+    width: "320px",
+    height: "320px",
     borderRadius: "50%",
     filter: "blur(120px)",
-    zIndex: 0,
     opacity: 0.55,
-    animation: "float 10s infinite ease-in-out",
+    zIndex: 0,
+    animation: "float 12s infinite ease-in-out",
   },
 
-  blob1: { background: "#3a62ff", top: "5%", left: "10%" },
-  blob2: {
-    background: "#9d3aff",
-    bottom: "15%",
-    right: "10%",
-    animationDelay: "3s",
-  },
-  blob3: {
-    background: "#00d2ff",
-    top: "55%",
-    left: "60%",
-    animationDelay: "5s",
-  },
+  blob1: { background: "#396cff", top: "-5%", left: "-5%" },
+  blob2: { background: "#9d3aff", bottom: "12%", right: "-10%" },
+  blob3: { background: "#00d2ff", top: "50%", left: "60%" },
 };

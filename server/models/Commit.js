@@ -15,4 +15,3 @@ const CommitSchema = new mongoose.Schema({
   ],
 });
 module.exports = mongoose.model("Commit", CommitSchema);
-    

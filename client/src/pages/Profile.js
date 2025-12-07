@@ -23,7 +23,7 @@ export default function Profile() {
   const [embedConfig, setEmbedConfig] = useState(null);
   const reportRef = useRef(null);
 
-  /* ---------------- Load Stats + PowerBI Embed Token ---------------- */
+  /* -------- GET USER STATS + REPORT TOKEN -------- */
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -49,22 +49,9 @@ export default function Profile() {
     loadEmbed();
   }, []);
 
-  /* ---------------- Embed Power BI Report ---------------- */
+  /* -------- POWER BI EMBED -------- */
   useEffect(() => {
     if (!embedConfig || !reportRef.current) return;
-
-    const models = powerbi.models;
-    const config = {
-      type: "report",
-      id: embedConfig.reportId,
-      embedUrl: embedConfig.embedUrl,
-      accessToken: embedConfig.embedToken,
-      tokenType: models.TokenType.Embed,
-      settings: {
-        filterPaneEnabled: false,
-        navContentPaneEnabled: false,
-      },
-    };
 
     const service = new powerbi.service.Service(
       powerbi.factories.hpmFactory,
@@ -72,16 +59,22 @@ export default function Profile() {
       powerbi.factories.routerFactory
     );
 
-    service.reset(reportRef.current);
-    const report = service.embed(reportRef.current, config);
-
-    report.on("loaded", () => console.log("Power BI Loaded"));
-    report.on("error", (e) => console.error("Power BI Error", e.detail));
+    const report = service.embed(reportRef.current, {
+      type: "report",
+      id: embedConfig.reportId,
+      embedUrl: embedConfig.embedUrl,
+      accessToken: embedConfig.embedToken,
+      tokenType: powerbi.models.TokenType.Embed,
+      settings: {
+        filterPaneEnabled: false,
+        navContentPaneEnabled: false,
+      },
+    });
 
     return () => service.reset(reportRef.current);
   }, [embedConfig]);
 
-  /* ---------------- Upload Profile Picture ---------------- */
+  /* -------- PROFILE PIC UPLOAD -------- */
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -90,16 +83,16 @@ export default function Profile() {
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("avatar", file);
+      const fd = new FormData();
+      fd.append("avatar", file);
 
-      const res = await API.post("/profile/avatar", formData, {
+      const res = await API.post("/profile/avatar", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       setUser((prev) => ({ ...prev, avatar: res.data.url }));
     } catch (err) {
-      console.error("Avatar upload failed:", err);
+      console.error("Avatar upload error:", err);
     }
 
     setUploading(false);
@@ -109,23 +102,19 @@ export default function Profile() {
 
   return (
     <div style={styles.page}>
-      {/* ---------------- NAVBAR ---------------- */}
-      <nav style={styles.navbar}>
+      {/* -------- NAVBAR -------- */}
+      <nav style={styles.nav}>
         <div style={styles.navLeft}>
-          <img
-            src={logodraft}
-            alt="logo"
-            style={{ width: 34, height: 34, borderRadius: "50%" }}
-          />
-          <span style={styles.navTitle}>CodeAmigos</span>
+          <img src={logodraft} alt="logo" style={styles.logo} />
+          <span style={styles.navTitle}>Profile</span>
         </div>
 
         <div style={styles.navRight}>
-          <button style={styles.navButton} onClick={() => navigate("/home")}>
+          <button style={styles.navBtn} onClick={() => navigate("/home")}>
             Home
           </button>
           <button
-            style={styles.navButton}
+            style={styles.navBtn}
             onClick={() => {
               logout();
               navigate("/signin");
@@ -136,10 +125,10 @@ export default function Profile() {
         </div>
       </nav>
 
-      {/* ---------------- PROFILE HEADER ---------------- */}
+      {/* -------- CONTENT -------- */}
       <div style={styles.container}>
-        <div style={styles.profileSection}>
-          {/* Avatar */}
+        {/* PROFILE HEADER */}
+        <div style={styles.profileHeader}>
           <label style={{ cursor: "pointer" }}>
             <img
               src={avatarPreview || user.avatar || logodraft}
@@ -154,26 +143,26 @@ export default function Profile() {
             />
           </label>
 
-          <div>
+          <div style={{ textAlign: "center" }}>
             <h2 style={styles.username}>
               {user.username}
-              <small style={styles.userTag}>@{user.username}</small>
+              <small style={styles.tag}>@{user.username}</small>
             </h2>
 
-            <p style={styles.userEmail}>{user.email}</p>
+            <p style={styles.email}>{user.email}</p>
 
-            <span style={styles.roleBadge}>{user.role}</span>
+            <span style={styles.role}>{user.role}</span>
 
             {uploading && (
-              <p style={{ color: "#58a6ff", marginTop: 10 }}>
+              <p style={{ color: "#58a6ff", marginTop: 8 }}>
                 Uploading avatar…
               </p>
             )}
           </div>
         </div>
 
-        {/* ---------------- STATS ---------------- */}
-        <div style={styles.statsRow}>
+        {/* STATS */}
+        <div style={styles.statsGrid}>
           <div style={styles.statBox}>
             <h3 style={styles.statValue}>{stats.repos}</h3>
             <p style={styles.statLabel}>Repositories</p>
@@ -190,27 +179,22 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ---------------- POWER BI ---------------- */}
-        <h3 style={styles.sectionTitle}>📊 Activity Dashboard</h3>
-
-        <div style={styles.biContainer} ref={reportRef}>
+        {/* POWER BI */}
+        <h3 style={styles.sectionTitle}>📊 Activity Report</h3>
+        <div style={styles.powerBi} ref={reportRef}>
           {!embedConfig && !loading && (
-            <div style={{ padding: 20, color: "#999" }}>
-              Power BI is not configured.
-            </div>
+            <p style={{ color: "#777" }}>Power BI not configured.</p>
           )}
         </div>
       </div>
 
-      {/* ---------------- FOOTER ---------------- */}
-      <footer style={styles.footer}>
-        © 2025 CodeAmigos • Profile Dashboard
-      </footer>
+      {/* FOOTER */}
+      <footer style={styles.footer}>© 2025 CodeAmigos • Profile</footer>
     </div>
   );
 }
 
-/* ---------- STYLES (unchanged) ---------- */
+/* -------- RESPONSIVE DESIGN -------- */
 const styles = {
   page: {
     background: "#0d1117",
@@ -218,79 +202,95 @@ const styles = {
     color: "#c9d1d9",
     fontFamily: "Inter, sans-serif",
   },
-  navbar: {
-    height: "60px",
+  nav: {
+    height: 60,
     background: "#161b22",
     borderBottom: "1px solid #30363d",
+    padding: "0 18px",
     display: "flex",
-    alignItems: "center",
     justifyContent: "space-between",
-    padding: "0 20px",
+    alignItems: "center",
     position: "sticky",
     top: 0,
-    zIndex: 10,
   },
-  navLeft: { display: "flex", alignItems: "center", gap: "10px" },
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
+  logo: { width: 36, height: 36, borderRadius: "50%" },
   navTitle: { fontSize: 18, fontWeight: 600 },
-  navRight: { display: "flex", gap: "10px" },
-  navButton: {
+  navRight: { display: "flex", gap: 10 },
+  navBtn: {
     background: "#238636",
     border: "1px solid #2ea043",
-    color: "#fff",
     padding: "6px 12px",
-    borderRadius: "6px",
+    color: "#fff",
+    borderRadius: 6,
     cursor: "pointer",
   },
-  container: { width: "900px", margin: "30px auto" },
-  profileSection: {
+
+  container: {
+    maxWidth: "900px",
+    margin: "30px auto",
+    padding: "0 15px",
+  },
+
+  /* Profile Block */
+  profileHeader: {
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    gap: "20px",
-    marginBottom: "30px",
+    gap: 15,
+    marginBottom: 30,
+    textAlign: "center",
   },
   avatar: {
-    width: "95px",
-    height: "95px",
+    width: 100,
+    height: 100,
     borderRadius: "50%",
     border: "2px solid #30363d",
-    cursor: "pointer",
   },
-  username: { margin: 0, fontSize: "28px", fontWeight: 700 },
-  userTag: { marginLeft: 10, color: "#8b949e", fontSize: "16px" },
-  userEmail: { margin: 0, color: "#8b949e" },
-  roleBadge: {
+  username: { fontSize: 26, margin: 0 },
+  tag: { marginLeft: 8, color: "#8b949e", fontSize: 14 },
+  email: { color: "#8b949e", marginTop: 3 },
+  role: {
     background: "#58a6ff",
     color: "#0d1117",
-    padding: "5px 10px",
-    borderRadius: "6px",
+    padding: "5px 12px",
+    borderRadius: 6,
+    marginTop: 8,
     fontWeight: 600,
-    marginTop: "8px",
-    display: "inline-block",
   },
-  statsRow: { display: "flex", gap: "20px", marginBottom: "30px" },
+
+  /* Stats */
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))",
+    gap: 12,
+    marginBottom: 30,
+  },
   statBox: {
-    flex: 1,
     background: "#161b22",
-    padding: "20px",
-    borderRadius: "10px",
     border: "1px solid #30363d",
+    padding: 20,
+    borderRadius: 10,
     textAlign: "center",
   },
-  statValue: { fontSize: "26px", fontWeight: 700, color: "#58a6ff" },
-  statLabel: { color: "#8b949e", marginTop: 5 },
-  sectionTitle: { fontSize: "22px", marginBottom: "10px" },
-  biContainer: {
+  statValue: { fontSize: 28, fontWeight: 700, color: "#58a6ff" },
+  statLabel: { color: "#8b949e" },
+
+  /* PowerBI */
+  sectionTitle: { fontSize: 22, marginBottom: 10, textAlign: "center" },
+  powerBi: {
     width: "100%",
-    height: "600px",
-    border: "1px solid #30363d",
-    borderRadius: "10px",
+    height: 450,
     background: "#111",
+    border: "1px solid #30363d",
+    borderRadius: 10,
     overflow: "hidden",
   },
+
   footer: {
-    marginTop: "40px",
-    padding: "20px",
     textAlign: "center",
+    padding: 20,
+    marginTop: 30,
     color: "#8b949e",
   },
 };

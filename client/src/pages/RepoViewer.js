@@ -1,3 +1,4 @@
+// client/src/pages/RepoViewer.js
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
@@ -13,97 +14,101 @@ export default function RepoViewer() {
   const [files, setFiles] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [inviteInput, setInviteInput] = useState("");
-
   const [loading, setLoading] = useState(true);
+  const [flash, setFlash] = useState("");
   const [error, setError] = useState("");
 
-  /* ---------------- LOAD REPO ---------------- */
+  /* Fetch Repo Info */
   const loadRepo = async () => {
     try {
       const res = await API.get(`/repos/${repoId}`);
       setRepo(res.data);
       setCollaborators(res.data.collaborators || []);
     } catch (err) {
-      console.error(err);
-      setError("Failed to load repository");
+      setError(
+        err.response?.data?.msg ||
+          "Unable to load this repository. It may be private or unavailable."
+      );
     }
   };
 
-  /* ---------------- LOAD FILES ---------------- */
+  /* Fetch Files */
   const loadFiles = async () => {
     try {
-      const res = await API.get(`/files/${repoId}`);
-
-      const data = res.data;
-      const final = Array.isArray(data)
-        ? data
-        : Array.isArray(data.files)
-        ? data.files
+      const res = await API.get(`/files/${repoId}/list`);
+      const output = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data.files)
+        ? res.data.files
         : [];
 
-      setFiles(final);
-    } catch (err) {
-      console.error("File load error:", err);
+      setFiles(output);
+    } catch {
       setFiles([]);
     }
   };
 
-  /* ---------------- ADD COLLABORATOR ---------------- */
+  /* Add Collaborator */
   const addCollaborator = async () => {
     if (!inviteInput.trim()) return;
 
     try {
-      await API.post(`/repos/${repoId}/collaborators/add`, {
+      const res = await API.post(`/repos/${repoId}/collaborators/add`, {
         collaborator: inviteInput,
       });
 
       setInviteInput("");
       loadRepo();
-      alert("Collaborator added!");
+      setFlash(res.data.msg);
+      setTimeout(() => setFlash(""), 2000);
     } catch (err) {
-      alert(err.response?.data?.msg || "Failed to add collaborator");
+      alert(err.response?.data?.msg || "Unable to add collaborator.");
     }
   };
 
-  /* ---------------- DELETE COLLABORATOR ---------------- */
+  /* Remove Collaborator */
   const removeCollaborator = async (id) => {
-    if (!window.confirm("Remove this collaborator?")) return;
+    if (!window.confirm("Are you sure you want to remove this collaborator?"))
+      return;
 
     try {
       await API.delete(`/repos/${repoId}/collaborators/${id}`);
       loadRepo();
-    } catch (err) {
-      alert("Failed to remove collaborator");
+    } catch {
+      alert("Failed to remove collaborator.");
     }
   };
 
   useEffect(() => {
-    const loadAll = async () => {
+    const load = async () => {
       await loadRepo();
       await loadFiles();
       setLoading(false);
     };
-    loadAll();
+    load();
   }, [repoId]);
 
-  if (loading) return <div style={styles.loading}>Loading…</div>;
-  if (error) return <div style={styles.error}>{error}</div>;
+  if (loading)
+    return (
+      <div style={styles.page}>
+        <div style={styles.loading}>Loading repository...</div>
+      </div>
+    );
 
   return (
     <div style={styles.page}>
-      {/* ---------------- NAVBAR ---------------- */}
+      {/* Navbar */}
       <nav style={styles.navbar}>
         <div style={styles.navLeft}>
-          <img
-            src={logodraft}
-            alt="logo"
-            style={{ width: 34, height: 34, borderRadius: "6px" }}
-          />
-          <span style={styles.navTitle}>CodeAmigos</span>
+          <img src={logodraft} alt="logo" style={{ width: 34 }} />
+          <span style={styles.navTitle}>Repository</span>
         </div>
 
         <div style={styles.navRight}>
-          <button style={styles.navButton} onClick={() => navigate("/home")}>
+          <button
+            style={{ ...styles.button, ...styles.primaryButton }}
+            onClick={() => navigate("/home")}
+          >
             Home
           </button>
 
@@ -116,240 +121,230 @@ export default function RepoViewer() {
         </div>
       </nav>
 
-      {/* ---------------- CONTENT ---------------- */}
+      {/* Content */}
       <div style={styles.container}>
         <h2 style={styles.repoName}>
           {repo?.name}{" "}
-          <span style={styles.visibilityBadge}>{repo?.visibility}</span>
+          {repo && (
+            <span style={styles.visibilityBadge}>{repo.visibility}</span>
+          )}
         </h2>
 
         <p style={styles.description}>
           {repo?.description || "No description provided."}
         </p>
 
-        <div style={styles.repoActions}>
+        {error && <div style={styles.errorBox}>{error}</div>}
+        {flash && <div style={styles.successBox}>{flash}</div>}
+
+        {/* Actions */}
+        <div style={styles.actions}>
           <button
-            style={styles.codespaceBtn}
+            style={{ ...styles.button, ...styles.primaryButton }}
             onClick={() => navigate(`/codespace/${repoId}`)}
           >
-            🚀 Open in Codespace
+            Open in Codespace
           </button>
 
           <button
-            style={styles.newFileBtn}
+            style={{ ...styles.button, ...styles.secondaryButton }}
             onClick={() => navigate(`/repo/${repoId}/file/new`)}
           >
-            ➕ Add File
+            Add File
           </button>
         </div>
 
-        {/* ---------------- COLLABORATORS SECTION ---------------- */}
-        <h3 style={styles.sectionTitle}>🤝 Collaborators</h3>
-
-        <div style={styles.inviteBox}>
-          <input
-            placeholder="Enter username or email"
-            value={inviteInput}
-            onChange={(e) => setInviteInput(e.target.value)}
-            style={styles.inviteInput}
-          />
-          <button style={styles.inviteBtn} onClick={addCollaborator}>
-            Invite
-          </button>
-        </div>
-
-        {collaborators.length === 0 ? (
-          <p style={styles.empty}>No collaborators added yet.</p>
-        ) : (
-          collaborators.map((c) => (
-            <div key={c._id} style={styles.collabItem}>
-              <span>
-                👤 {c.username}{" "}
-                <small style={{ color: "#8b949e" }}>{c.email}</small>
-              </span>
-              <button
-                style={styles.removeBtn}
-                onClick={() => removeCollaborator(c._id)}
-              >
-                ✖
-              </button>
-            </div>
-          ))
-        )}
-
-        {/* ---------------- FILES SECTION ---------------- */}
-        <h3 style={styles.sectionTitle}>📁 Repository Files</h3>
+        {/* Files */}
+        <h3 style={styles.sectionTitle}>Files</h3>
 
         {files.length === 0 ? (
-          <p style={styles.empty}>No files in this repository.</p>
+          <p style={styles.empty}>This repository has no files yet.</p>
         ) : (
-          <div style={styles.fileList}>
+          <div style={styles.listBox}>
             {files.map((file) => (
               <div
                 key={file._id}
-                style={styles.fileItem}
+                style={styles.listItem}
                 onClick={() => navigate(`/repo/${repoId}/file/${file._id}`)}
               >
-                📄 {file.name}
+                {file.name}
               </div>
             ))}
           </div>
         )}
+
+        {/* Collaborators */}
+        <h3 style={styles.sectionTitle}>Collaborators</h3>
+
+        <div style={styles.inviteRow}>
+          <input
+            placeholder="Enter a username..."
+            value={inviteInput}
+            onChange={(e) => setInviteInput(e.target.value)}
+            style={styles.inviteInput}
+          />
+          <button
+            style={{ ...styles.button, ...styles.primaryButton }}
+            onClick={addCollaborator}
+          >
+            Add
+          </button>
+        </div>
+
+        {collaborators.length === 0 ? (
+          <p style={styles.empty}>No collaborators assigned.</p>
+        ) : (
+          collaborators.map((c) => (
+            <div key={c._id} style={styles.collabItem}>
+              <span>{c.username}</span>
+
+              {repo.owner === user?._id && (
+                <button
+                  style={{ ...styles.button, ...styles.dangerButton }}
+                  onClick={() => removeCollaborator(c._id)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
-      {/* FOOTER */}
       <footer style={styles.footer}>
-        © 2025 CodeAmigos • Repository Viewer
+        © {new Date().getFullYear()} CodeAmigos
       </footer>
     </div>
   );
 }
 
-/* ------------------------------------------
-   STYLES (Same Dark GitHub Theme)
-------------------------------------------- */
-
+/* ---------- Modern UI Styles ---------- */
 const styles = {
   page: {
     background: "#0d1117",
     minHeight: "100vh",
     color: "#c9d1d9",
-    fontFamily: "Inter, sans-serif",
     paddingTop: "70px",
+    fontFamily: "Inter, sans-serif",
   },
 
   navbar: {
-    height: "60px",
     background: "#161b22",
+    height: 60,
     borderBottom: "1px solid #30363d",
-    padding: "0 20px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    padding: "0 16px",
     position: "fixed",
     top: 0,
-    left: 0,
-    right: 0,
+    width: "100%",
     zIndex: 100,
   },
 
-  navLeft: { display: "flex", alignItems: "center", gap: "12px" },
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
+  navRight: { display: "flex", alignItems: "center", gap: 12 },
   navTitle: { fontSize: 20, fontWeight: 600 },
-  navRight: { display: "flex", alignItems: "center", gap: "15px" },
-
-  navButton: {
-    background: "#238636",
-    border: "1px solid #2ea043",
-    color: "#fff",
-    padding: "6px 14px",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
-
   profileIcon: {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    border: "2px solid #30363d",
     cursor: "pointer",
   },
 
-  container: { width: "900px", margin: "30px auto" },
+  container: { width: "90%", maxWidth: 900, margin: "20px auto" },
 
-  repoName: { fontSize: "28px", marginBottom: "10px" },
+  repoName: { fontSize: 28, marginBottom: 10 },
+  description: { color: "#8b949e", marginBottom: 20 },
+
   visibilityBadge: {
     background: "#30363d",
-    padding: "4px 10px",
-    borderRadius: "6px",
+    padding: "6px 12px",
+    borderRadius: 6,
+    fontSize: 14,
+    marginLeft: 10,
   },
 
-  description: { color: "#8b949e" },
-
-  repoActions: {
-    display: "flex",
-    gap: "15px",
-    marginBottom: "20px",
-  },
-
-  codespaceBtn: {
-    background: "#0969da",
-    border: "1px solid #1f6feb",
-    padding: "10px 14px",
-    borderRadius: "6px",
+  button: {
+    padding: "10px 18px",
+    borderRadius: 6,
     cursor: "pointer",
-    color: "#fff",
+    border: "none",
+    marginRight: 10,
+    fontSize: "0.95rem",
+    transition: "0.25s",
   },
 
-  newFileBtn: {
-    background: "#238636",
-    border: "1px solid #2ea043",
-    padding: "10px 14px",
-    borderRadius: "6px",
+  primaryButton: { background: "#238636", color: "#fff" },
+  secondaryButton: { background: "#30363d", color: "#fff" },
+  dangerButton: { background: "#b42323", color: "#fff" },
+
+  actions: { marginBottom: 25 },
+
+  listBox: {
+    background: "#161b22",
+    borderRadius: 10,
+    border: "1px solid #30363d",
+    padding: 10,
+  },
+
+  listItem: {
+    padding: 14,
     cursor: "pointer",
-    color: "#fff",
+    borderBottom: "1px solid #30363d",
+    transition: "0.25s",
   },
 
-  /* Collaborators */
-  inviteBox: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "15px",
-  },
+  sectionTitle: { marginTop: 30, fontSize: 22 },
 
+  inviteRow: { display: "flex", gap: 10, marginBottom: 20 },
   inviteInput: {
     flex: 1,
+    padding: 10,
+    borderRadius: 6,
     background: "#0d1117",
     border: "1px solid #30363d",
-    padding: "10px",
-    borderRadius: "6px",
-    color: "#c9d1d9",
-  },
-
-  inviteBtn: {
-    background: "#1f6feb",
-    border: "1px solid #3c82f6",
-    padding: "10px 14px",
-    borderRadius: "6px",
     color: "#fff",
-    cursor: "pointer",
   },
 
   collabItem: {
-    background: "#161b22",
-    padding: "12px",
-    borderRadius: "6px",
-    border: "1px solid #30363d",
-    marginBottom: "10px",
     display: "flex",
     justifyContent: "space-between",
-  },
-
-  removeBtn: {
-    background: "#da3633",
-    border: "1px solid #f85149",
-    padding: "4px 10px",
-    borderRadius: "6px",
-    color: "#fff",
-    cursor: "pointer",
-  },
-
-  fileList: {
     background: "#161b22",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 10,
     border: "1px solid #30363d",
-    borderRadius: "10px",
-    padding: "10px",
   },
 
-  fileItem: {
-    padding: "12px 15px",
-    borderBottom: "1px solid #30363d",
-    cursor: "pointer",
+  empty: { color: "#8b949e", marginBottom: 15 },
+
+  errorBox: {
+    background: "#762c2c",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 15,
+    color: "#ffdcdc",
   },
 
-  empty: { color: "#8b949e" },
+  successBox: {
+    background: "#1e4425",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 15,
+    color: "#9df5af",
+  },
 
-  footer: { marginTop: "40px", padding: "15px", textAlign: "center" },
+  footer: {
+    marginTop: 50,
+    textAlign: "center",
+    color: "#8b949e",
+    paddingBottom: 30,
+  },
 
-  loading: { padding: 20, color: "#58a6ff" },
-  error: { padding: 20, color: "#ff6b6b" },
+  loading: {
+    color: "#8b949e",
+    textAlign: "center",
+    paddingTop: 80,
+  },
 };

@@ -27,13 +27,7 @@ export default function Notifications() {
       {/* ---------- HEADER ---------- */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <img
-            src={logodraft}
-            alt="logo"
-            width="35"
-            height="35"
-            style={{ borderRadius: "50%" }}
-          />
+          <img src={logodraft} alt="logo" style={styles.logo} />
           <span style={styles.headerTitle}>Notifications</span>
         </div>
 
@@ -52,17 +46,22 @@ export default function Notifications() {
         <h2 style={styles.heading}>Your Notifications</h2>
 
         {loading ? (
-          <p style={styles.loading}>Loading…</p>
+          <p style={styles.infoText}>Loading...</p>
         ) : notifications.length === 0 ? (
-          <p style={styles.empty}>No notifications yet.</p>
+          <p style={styles.infoText}>You have no notifications at this time.</p>
         ) : (
           notifications.map((note) => (
             <div key={note._id} style={styles.card}>
-              <strong style={styles.title}>{note.title}</strong>
+              <strong style={styles.cardTitle}>
+                {note.type === "collab_request"
+                  ? "Collaboration Request"
+                  : "System Update"}
+              </strong>
+
               <p style={styles.message}>{note.message}</p>
 
               <small style={styles.time}>
-                {new Date(note.createdAt).toLocaleString()}
+                {new Date(note.date || note.createdAt).toLocaleString()}
               </small>
             </div>
           ))
@@ -71,97 +70,96 @@ export default function Notifications() {
 
       {/* ---------- FOOTER ---------- */}
       <footer style={styles.footer}>
-        © {new Date().getFullYear()} MergeWorks — All Rights Reserved
+        © {new Date().getFullYear()} CodeAmigos — Notifications Center
       </footer>
     </div>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ---------------- CLEAN STYLE SYSTEM ---------------- */
 
 const styles = {
   page: {
     background: "#0d1117",
     minHeight: "100vh",
-    color: "#c9d1d9",
-    fontFamily: "Inter, sans-serif",
     display: "flex",
     flexDirection: "column",
+    color: "#c9d1d9",
+    fontFamily: "Inter, sans-serif",
   },
 
-  /* HEADER */
   header: {
-    height: "60px",
+    height: 60,
     background: "#161b22",
     borderBottom: "1px solid #30363d",
-    padding: "0 20px",
+    padding: "0 16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     position: "sticky",
     top: 0,
-    zIndex: 10,
+    zIndex: 20,
   },
 
-  headerLeft: { display: "flex", alignItems: "center", gap: "12px" },
+  headerLeft: { display: "flex", alignItems: "center", gap: 12 },
+  headerRight: { display: "flex", gap: 12 },
 
-  headerTitle: {
-    fontSize: "18px",
-    fontWeight: "600",
-  },
+  logo: { width: 34, height: 34, borderRadius: "50%" },
 
-  headerRight: { display: "flex", gap: "12px" },
+  headerTitle: { fontWeight: 600, fontSize: "18px" },
 
   navBtn: {
-    background: "transparent",
     border: "1px solid #30363d",
-    color: "#c9d1d9",
     padding: "6px 14px",
-    borderRadius: "6px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    background: "#21262d",
     cursor: "pointer",
     fontSize: "14px",
-    transition: "0.2s",
   },
 
-  /* MAIN */
   main: {
-    maxWidth: "700px",
+    maxWidth: "720px",
     width: "100%",
-    margin: "40px auto",
-    padding: "0 20px",
+    margin: "80px auto 20px",
+    padding: "0 16px",
   },
 
-  heading: { fontSize: "24px", marginBottom: "20px" },
+  heading: {
+    fontSize: 24,
+    marginBottom: 16,
+    textAlign: "center",
+  },
 
-  loading: { fontSize: "16px", color: "#8b949e" },
-  empty: { fontSize: "16px", color: "#8b949e" },
+  infoText: {
+    color: "#8b949e",
+    textAlign: "center",
+    marginTop: 20,
+  },
 
-  /* CARD */
   card: {
     background: "#161b22",
     border: "1px solid #30363d",
+    borderRadius: 10,
     padding: "18px",
-    borderRadius: "8px",
-    marginBottom: "16px",
-    transition: "0.2s",
+    marginBottom: "14px",
   },
 
-  title: { fontSize: "16px" },
-
-  message: {
-    marginTop: "8px",
-    color: "#c9d1d9",
-    lineHeight: "1.4",
+  cardTitle: {
+    fontSize: "16px",
+    marginBottom: 6,
+    color: "#58a6ff",
+    display: "block",
   },
 
-  time: { marginTop: "8px", display: "block", color: "#8b949e" },
+  message: { margin: "6px 0", lineHeight: 1.5 },
 
-  /* FOOTER */
+  time: { display: "block", color: "#8b949e", fontSize: "12px" },
+
   footer: {
     marginTop: "auto",
     textAlign: "center",
-    padding: "16px 0",
-    background: "#0d1117",
+    padding: "20px",
     borderTop: "1px solid #30363d",
     color: "#8b949e",
     fontSize: "14px",

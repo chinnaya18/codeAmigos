@@ -2,12 +2,10 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import API from "../services/api";
-import { FaBell, FaPlus } from "react-icons/fa";
 import logodraft from "./logodraft.png";
-import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function Home() {
-  const { user, token } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,221 +13,301 @@ export default function Home() {
   const [popularRepos, setPopularRepos] = useState([]);
   const [events, setEvents] = useState([]);
 
-  const headerHeight = "60px";
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
 
-  // Load Repositories
-  const loadRepos = async () => {
-    try {
-      const resp = await API.get("/repos/myrepos");
-      setRepos(resp.data.repos || resp.data);
+  const headerHeight = 60;
 
-      const popular = await API.get("/repos/popular/all");
-      setPopularRepos(popular.data.repos || popular.data);
-    } catch (err) {
-      console.error("Failed to load repos:", err);
-    }
-  };
-
-  // Load Events
-  const loadEvents = async () => {
-    try {
-      const res = await API.get("/events");
-      setEvents(res.data.events);
-    } catch (err) {
-      console.error("Failed to load events:", err);
-    }
-  };
+  /* Detect screen responsiveness live */
+  const [mobile, setMobile] = useState(window.innerWidth < 992);
 
   useEffect(() => {
-    if (token) {
-      loadRepos();
-      loadEvents();
-    }
-  }, [location.key]);
+    const resizeCheck = () => setMobile(window.innerWidth < 992);
+    window.addEventListener("resize", resizeCheck);
+    return () => window.removeEventListener("resize", resizeCheck);
+  }, []);
+
+  /* Load Everything */
+  useEffect(() => {
+    if (!token) return;
+
+    (async () => {
+      try {
+        const myRepos = await API.get("/repos/myrepos");
+        setRepos(myRepos.data.repos || myRepos.data);
+
+        const popular = await API.get("/repos/popular/all");
+        setPopularRepos(popular.data.repos || popular.data);
+
+        const ev = await API.get("/events");
+        setEvents(ev.data.events);
+      } catch (err) {
+        console.error("Fetch failed:", err);
+      }
+    })();
+  }, [location.key, token]);
 
   return (
-    <div
-      className="bg-dark text-light"
-      style={{ fontFamily: "Inter, sans-serif" }}
-    >
-      {/* ---------------- TOP NAVBAR ---------------- */}
-      <nav
-        className="navbar navbar-dark bg-dark border-bottom border-secondary px-4 shadow-sm"
-        style={{ height: headerHeight }}
-      >
-        {/* Left Group */}
-        <div className="d-flex align-items-center gap-3">
+    <div style={styles.page}>
+      {/* ---------- NAVBAR ---------- */}
+      <nav style={styles.navbar}>
+        {/* LEFT AREA */}
+        <div style={styles.navLeft}>
+          {mobile && (
+            <button style={styles.iconButton} onClick={() => setLeftOpen(true)}>
+              ☰
+            </button>
+          )}
+
           <img
             src={logodraft}
             width="36"
             height="36"
-            className="rounded-circle shadow"
             alt="logo"
+            style={styles.logo}
           />
 
-          <input
-            type="text"
-            placeholder="Search repositories..."
-            className="form-control form-control-sm bg-secondary text-light border-0 px-3"
-            style={{ width: "260px", borderRadius: "20px" }}
-          />
+          {!mobile && (
+            <input placeholder="Search repositories..." style={styles.search} />
+          )}
         </div>
 
-        {/* Right Group */}
-        <div className="d-flex align-items-center gap-3">
+        {/* RIGHT AREA */}
+        <div style={styles.navRight}>
+          {/* Create Repo (+ Button) */}
           <button
-            className="btn btn-success btn-sm d-flex align-items-center gap-2 px-3 shadow"
-            style={{ borderRadius: "20px" }}
+            style={styles.iconButton}
+            title="New Repository"
             onClick={() => navigate("/newrepo")}
           >
-            <FaPlus /> New
+            ➕
           </button>
 
+          {/* Bell Notification Button */}
           <button
-            className="btn btn-outline-light btn-sm rounded-circle p-2 shadow-sm"
+            style={styles.iconButton}
+            title="Notifications"
             onClick={() => navigate("/notifications")}
           >
-            <FaBell />
+            🔔
           </button>
 
+          {/* Profile */}
           <img
             src={logodraft}
-            width="36"
-            height="36"
-            className="rounded-circle border border-secondary shadow"
+            width="35"
+            height="35"
             alt="profile"
-            style={{ cursor: "pointer" }}
+            style={styles.profile}
             onClick={() => navigate("/profile")}
           />
         </div>
       </nav>
 
-      {/* ---------------- LEFT SIDEBAR ---------------- */}
-      <div
-        className="position-fixed bg-dark text-light border-end border-secondary"
-        style={{
-          top: headerHeight,
-          left: 0,
-          width: "300px",
-          height: `calc(100vh - ${headerHeight})`,
-          padding: "1rem",
-          overflowY: "auto",
-        }}
-      >
-        <h5 className="pb-2 border-bottom border-secondary fw-bold">
-          Your Repositories
-        </h5>
+      {/* ---------- MAIN LAYOUT ---------- */}
+      <div style={styles.layout(mobile, headerHeight)}>
+        {/* -------- LEFT SIDEBAR -------- */}
+        {(leftOpen || !mobile) && (
+          <aside style={styles.leftSidebar(mobile, headerHeight)}>
+            <h5 style={styles.sidebarHeader}>Your Repositories</h5>
 
-        {repos.length === 0 ? (
-          <p className="text-secondary mt-3">No repositories yet.</p>
-        ) : (
-          repos.map((repo) => (
-            <div
-              key={repo._id}
-              className="py-2 px-3 border-bottom border-secondary repo-item"
-              style={{
-                cursor: "pointer",
-                transition: "0.2s",
-                borderRadius: "6px",
-              }}
-              onClick={() => navigate(`/repo/${repo._id}`)}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#2d2d2d")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
-              {repo.name}
-            </div>
-          ))
+            {repos.map((repo) => (
+              <div
+                key={repo._id}
+                style={styles.sidebarItem}
+                onClick={() => {
+                  navigate(`/repo/${repo._id}`);
+                  setLeftOpen(false);
+                }}
+              >
+                {repo.name}
+              </div>
+            ))}
+
+            {mobile && (
+              <button
+                style={styles.closeButton}
+                onClick={() => setLeftOpen(false)}
+              >
+                Close
+              </button>
+            )}
+          </aside>
         )}
-      </div>
 
-      {/* ---------------- RIGHT SIDEBAR ---------------- */}
-      <div
-        className="position-fixed bg-dark text-light border-start border-secondary"
-        style={{
-          top: headerHeight,
-          right: 0,
-          width: "300px",
-          height: `calc(100vh - ${headerHeight})`,
-          padding: "1rem",
-          overflowY: "auto",
-        }}
-      >
-        <h5 className="pb-2 border-bottom border-secondary fw-bold">
-          Popular Repos
-        </h5>
+        {/* -------- MAIN CONTENT -------- */}
+        <main style={styles.main(mobile, headerHeight)}>
+          <h2 style={styles.title}> Welcome to CodeAmigos</h2>
+          <p style={styles.subText}>Collaborate, code and share together.</p>
 
-        {popularRepos.length === 0 ? (
-          <p className="text-secondary mt-3">No popular repositories.</p>
-        ) : (
-          popularRepos.map((repo) => (
-            <div
-              key={repo._id}
-              className="py-3 px-3 mb-2 bg-secondary bg-opacity-25 border border-secondary rounded shadow-sm"
-              style={{ cursor: "pointer", transition: "0.2s" }}
-              onClick={() => navigate(`/repo/${repo._id}`)}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#3a3a3a")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#2d2d2d")
-              }
-            >
-              <strong className="fw-bold">{repo.name}</strong>
-              <div className="text-secondary small">{repo.views} views</div>
-            </div>
-          ))
-        )}
-      </div>
+          <h3 style={styles.section}>📅 Upcoming Events</h3>
 
-      {/* ---------------- CENTER CONTENT ---------------- */}
-      <div
-        className="bg-secondary text-light"
-        style={{
-          marginLeft: "310px",
-          marginRight: "310px",
-          marginTop: headerHeight,
-          padding: "2rem",
-          minHeight: "100vh",
-        }}
-      >
-        <h2 className="fw-bold">Welcome to CodeAmigos</h2>
-        <p className="text-light opacity-75">
-          Your collaborative coding dashboard.
-        </p>
+          {events.length === 0 && (
+            <p style={styles.placeholder}>No events scheduled.</p>
+          )}
 
-        {/* EVENTS */}
-        <h3 className="mt-4 fw-bold">Upcoming Events</h3>
-
-        {events.length === 0 ? (
-          <p className="text-light mt-3">No events posted yet.</p>
-        ) : (
-          events.map((ev) => (
-            <div
-              key={ev._id}
-              className="p-4 mt-3 bg-dark rounded border border-secondary shadow"
-            >
-              <h5 className="fw-bold">{ev.title}</h5>
+          {events.map((ev) => (
+            <div key={ev._id} style={styles.eventCard}>
+              <h5>{ev.title}</h5>
               <p>{ev.description}</p>
-              <small className="text-secondary">{ev.date}</small>
+              <small style={{ color: "#58a6ff" }}>{ev.date}</small>
             </div>
-          ))
+          ))}
+        </main>
+
+        {/* -------- RIGHT SIDEBAR -------- */}
+        {(rightOpen || !mobile) && (
+          <aside style={styles.rightSidebar(mobile, headerHeight)}>
+            <h5 style={styles.sidebarHeader}> Popular Repositories</h5>
+
+            {popularRepos.map((repo) => (
+              <div
+                key={repo._id}
+                style={styles.sidebarItem}
+                onClick={() => {
+                  navigate(`/repo/${repo._id}`);
+                  setRightOpen(false);
+                }}
+              >
+                {repo.name} — {repo.views} views
+              </div>
+            ))}
+
+            {mobile && (
+              <button
+                style={styles.closeButton}
+                onClick={() => setRightOpen(false)}
+              >
+                Close
+              </button>
+            )}
+          </aside>
         )}
       </div>
-
-      {/* ---------------- FOOTER ---------------- */}
-      <footer
-        className="bg-dark text-center text-secondary py-3 border-top border-secondary"
-        style={{ marginLeft: "300px", marginRight: "300px" }}
-      >
-        <p className="mb-0" style={{ fontSize: "0.9rem" }}>
-          © {new Date().getFullYear()} <strong>CodeAmigos</strong> — Built for
-          developers ❤️
-        </p>
-      </footer>
     </div>
   );
 }
+
+/* ---------- Styles ---------- */
+
+const styles = {
+  page: { background: "#0d1117", minHeight: "100vh", color: "#fff" },
+
+  navbar: {
+    height: 60,
+    background: "#161b22",
+    padding: "0 16px",
+    borderBottom: "1px solid #30363d",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+  },
+
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
+  navRight: { display: "flex", gap: 10, alignItems: "center" },
+
+  logo: { borderRadius: "50%" },
+
+  iconButton: {
+    fontSize: 20,
+    background: "#21262d",
+    border: "1px solid #30363d",
+    padding: "6px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+    color: "#fff",
+  },
+
+  search: {
+    width: 230,
+    padding: "6px 10px",
+    borderRadius: 6,
+    background: "#21262d",
+    border: "1px solid #30363d",
+    color: "#fff",
+  },
+
+  profile: {
+    borderRadius: "50%",
+    cursor: "pointer",
+    border: "2px solid #30363d",
+  },
+
+  layout: (mobile, h) => ({
+    display: "flex",
+    flexDirection: mobile ? "column" : "row",
+  }),
+
+  leftSidebar: (mobile, h) => ({
+    width: mobile ? "100%" : 280,
+    position: mobile ? "fixed" : "sticky",
+    top: h,
+    height: `calc(100vh - ${h}px)`,
+    background: "#161b22",
+    borderRight: "1px solid #30363d",
+    padding: 15,
+    overflowY: "auto",
+    zIndex: 99,
+  }),
+
+  rightSidebar: (mobile, h) => ({
+    width: mobile ? "100%" : 280,
+    position: mobile ? "fixed" : "sticky",
+    top: h,
+    height: `calc(100vh - ${h}px)`,
+    background: "#161b22",
+    borderLeft: "1px solid #30363d",
+    padding: 15,
+    overflowY: "auto",
+    zIndex: 99,
+  }),
+
+  sidebarHeader: {
+    borderBottom: "1px solid #30363d",
+    paddingBottom: 6,
+    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: 600,
+  },
+
+  sidebarItem: {
+    background: "#21262d",
+    padding: 10,
+    marginTop: 6,
+    cursor: "pointer",
+    borderRadius: 6,
+  },
+
+  closeButton: {
+    background: "#b42323",
+    border: "1px solid #da3633",
+    padding: 10,
+    marginTop: 15,
+    color: "#fff",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+
+  main: (mobile, h) => ({
+    flex: 1,
+    padding: 25,
+    marginTop: mobile ? h : 0,
+  }),
+
+  title: { fontSize: 26, marginBottom: 4 },
+  subText: { opacity: 0.7 },
+  section: { marginTop: 30, fontSize: 20 },
+
+  eventCard: {
+    background: "#161b22",
+    padding: 15,
+    borderRadius: 10,
+    border: "1px solid #30363d",
+    marginTop: 10,
+  },
+
+  placeholder: { opacity: 0.6, marginTop: 5 },
+};

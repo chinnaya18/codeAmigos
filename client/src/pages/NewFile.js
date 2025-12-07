@@ -10,11 +10,13 @@ export default function NewFile() {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState("");
 
   const upload = async () => {
     if (!file) return setError("Please select a file.");
     setError("");
     setUploading(true);
+    setStatus("Uploading...");
 
     try {
       const fd = new FormData();
@@ -24,41 +26,36 @@ export default function NewFile() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      navigate(`/repo/${repoId}`);
+      setStatus("Upload complete.");
+      setTimeout(() => navigate(`/repo/${repoId}`), 800);
     } catch (err) {
-      setError("Upload failed");
-      console.error(err);
+      setError("Upload failed. Try again.");
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
   };
 
   return (
     <div style={styles.page}>
-      {/* ---------------- HEADER ---------------- */}
+      {/* ---------- NAVBAR ---------- */}
       <nav style={styles.navbar}>
         <div style={styles.navLeft}>
-          <img
-            src={logodraft}
-            alt="logo"
-            style={{ width: 34, height: 34, borderRadius: "6px" }}
-          />
+          <img src={logodraft} alt="logo" style={styles.logo} />
           <span style={styles.navTitle}>CodeAmigos</span>
         </div>
 
-        <div style={styles.navRight}>
-          <button style={styles.navButton} onClick={() => navigate("/home")}>
-            Home
-          </button>
-        </div>
+        <button style={styles.navButton} onClick={() => navigate("/home")}>
+          Home
+        </button>
       </nav>
 
-      {/* ---------------- CONTENT ---------------- */}
-      <div style={styles.container}>
+      {/* ---------- CONTENT ---------- */}
+      <div style={styles.wrapper}>
         <div style={styles.card}>
-          <h2 style={styles.title}>Upload New File</h2>
+          <h2 style={styles.title}>Upload File</h2>
 
           {error && <p style={styles.error}>{error}</p>}
+          {status && <p style={styles.status}>{status}</p>}
 
           <input
             type="file"
@@ -67,24 +64,28 @@ export default function NewFile() {
           />
 
           <button
-            style={styles.uploadBtn}
+            style={{
+              ...styles.uploadBtn,
+              opacity: uploading ? 0.7 : 1,
+              cursor: uploading ? "wait" : "pointer",
+            }}
             onClick={upload}
             disabled={uploading}
           >
-            {uploading ? "Uploading…" : "Upload File"}
+            {uploading ? "Uploading..." : "Upload File"}
           </button>
         </div>
       </div>
 
-      {/* ---------------- FOOTER ---------------- */}
-      <footer style={styles.footer}>© 2025 CodeAmigos • File Upload</footer>
+      {/* ---------- FOOTER ---------- */}
+      <footer style={styles.footer}>
+        © 2025 CodeAmigos — File Upload Panel
+      </footer>
     </div>
   );
 }
 
-/* ------------------------------------------
-   DARK GITHUB UI — INLINE STYLE SHEET
-------------------------------------------- */
+/* ---------- PROFESSIONAL UI STYLE ---------- */
 
 const styles = {
   page: {
@@ -92,12 +93,11 @@ const styles = {
     minHeight: "100vh",
     color: "#c9d1d9",
     fontFamily: "Inter, sans-serif",
-    paddingTop: "80px", // space for navbar
+    paddingTop: 80,
   },
 
-  /* NAVBAR */
   navbar: {
-    height: "60px",
+    height: 60,
     background: "#161b22",
     borderBottom: "1px solid #30363d",
     padding: "0 20px",
@@ -111,73 +111,82 @@ const styles = {
     zIndex: 100,
   },
 
-  navLeft: { display: "flex", alignItems: "center", gap: "12px" },
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
   navTitle: { fontSize: 20, fontWeight: 600 },
-
-  navRight: { display: "flex", gap: "10px", alignItems: "center" },
+  logo: { width: 34, height: 34, borderRadius: "6px" },
 
   navButton: {
     background: "#238636",
     border: "1px solid #2ea043",
-    color: "#fff",
-    padding: "6px 14px",
-    borderRadius: "6px",
-    cursor: "pointer",
+    padding: "8px 18px",
+    borderRadius: 6,
     fontWeight: 600,
+    cursor: "pointer",
+    color: "#fff",
   },
 
-  /* CONTENT */
-  container: {
-    width: "900px",
-    margin: "0 auto",
-    marginTop: "40px",
+  wrapper: {
+    display: "flex",
+    justifyContent: "center",
+    padding: "20px",
   },
 
   card: {
+    width: "100%",
+    maxWidth: "450px",
     background: "#161b22",
     border: "1px solid #30363d",
     borderRadius: "12px",
     padding: "25px",
-    boxShadow: "0 4px 18px rgba(0,0,0,0.4)",
   },
 
-  title: { fontSize: "24px", marginBottom: "20px" },
+  title: { fontSize: "22px", marginBottom: 20, fontWeight: 600 },
 
   fileInput: {
+    width: "100%",
+    padding: "12px",
     background: "#0d1117",
     border: "1px solid #30363d",
-    padding: "12px",
-    width: "100%",
     borderRadius: "6px",
     color: "#c9d1d9",
-    marginBottom: "20px",
+    marginBottom: 20,
   },
 
   uploadBtn: {
+    width: "100%",
+    padding: "12px",
     background: "#238636",
     border: "1px solid #2ea043",
-    color: "white",
-    padding: "12px",
-    width: "100%",
     borderRadius: "6px",
-    fontSize: "16px",
-    cursor: "pointer",
     fontWeight: 600,
+    fontSize: "15px",
+    color: "#fff",
+  },
+
+  status: {
+    background: "#1b472b",
+    padding: "10px",
+    borderRadius: "6px",
+    color: "#8bf59b",
+    marginBottom: 15,
+    fontSize: "14px",
+    textAlign: "center",
   },
 
   error: {
-    background: "#3b0a0a",
-    border: "1px solid #ff6b6b",
+    background: "#612525",
+    border: "1px solid #da3633",
     padding: "10px",
     borderRadius: "6px",
-    marginBottom: "15px",
+    marginBottom: 15,
     color: "#ffb3b3",
+    textAlign: "center",
   },
 
   footer: {
+    marginTop: 40,
     textAlign: "center",
-    marginTop: "40px",
-    padding: "15px",
     color: "#8b949e",
+    paddingBottom: 30,
   },
 };

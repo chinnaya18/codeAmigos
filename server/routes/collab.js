@@ -23,4 +23,10 @@ router.post("/:repoId/request", auth, async (req, res) => {
   res.json({ msg: "Collaboration request sent!" });
 });
 
+router.all("*", (req, res) => {
+  return res.status(404).json({
+    msg: "Collaboration API moved. Use /api/repos/:repoId/collaborators/add instead.",
+  });
+});
+
 module.exports = router;
