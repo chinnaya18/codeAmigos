@@ -12,46 +12,52 @@ export default function Codespace() {
   const [status, setStatus] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  /* -------- Fetch Files -------- */
+  // ---------------- Fetch Files -------------------
   const loadFiles = async () => {
     try {
       const res = await API.get(`/files/${repoId}/list`);
-      setFiles(Array.isArray(res.data) ? res.data : res.data?.files || []);
-    } catch {
-      console.error("Failed to load files.");
+      setFiles(res.data);
+    } catch (err) {
+      console.error("Failed to load files:", err);
     }
   };
 
-  useEffect(() => loadFiles(), [repoId]);
-
-  /* -------- Open File -------- */
+  // ---------------- Open File --------------------
   const openFile = async (file) => {
-    if (openTabs.find((t) => t.file._id === file._id))
-      return setActiveTab(file._id);
+    const exists = openTabs.find((t) => t.file._id === file._id);
+
+    if (exists) {
+      setActiveTab(file._id);
+      return;
+    }
 
     try {
-      setStatus("Opening...");
+      setStatus("Opening file...");
 
       const res = await API.get(`/files/${repoId}/file/${file._id}`);
-      const content = await (await fetch(res.data.cloudinaryUrl)).text();
+      const url = res.data.cloudinaryUrl;
 
-      setOpenTabs((prev) => [...prev, { file, content }]);
+      const content = await (await fetch(url)).text();
+
+      const newTab = { file, content };
+      setOpenTabs((prev) => [...prev, newTab]);
       setActiveTab(file._id);
-      setStatus("Opened ✓");
+      setStatus("Opened");
     } catch {
-      setStatus("Failed to open");
+      setStatus("Failed to open file");
     }
   };
 
-  /* -------- Update on typing -------- */
-  const updateTabContent = (fileId, text) =>
+  // ---------------- Update Editor --------------------
+  const updateTabContent = (fileId, text) => {
     setOpenTabs((prev) =>
       prev.map((tab) =>
         tab.file._id === fileId ? { ...tab, content: text } : tab
       )
     );
+  };
 
-  /* -------- Save file -------- */
+  // ---------------- Save File ------------------------
   const saveFile = async () => {
     const tab = openTabs.find((t) => t.file._id === activeTab);
     if (!tab) return;
@@ -64,84 +70,99 @@ export default function Codespace() {
 
     try {
       await API.put(`/files/${repoId}/file/${tab.file._id}`, fd);
-      setStatus("Saved ✓");
+      setStatus("Saved");
     } catch {
-      setStatus("Save failed");
+      setStatus("Save Failed");
     }
   };
 
-  /* -------- Pull new version -------- */
+  // ---------------- Pull Latest ------------------------
+  // ---------------- Pull Latest ------------------------
   const pullFile = async () => {
     const tab = openTabs.find((t) => t.file._id === activeTab);
     if (!tab) return;
 
-    setStatus("Pulling...");
+    setStatus("Pulling latest...");
 
     try {
       const res = await API.get(`/files/${repoId}/file/${tab.file._id}`);
-      const latest = await (await fetch(res.data.cloudinaryUrl)).text();
+      const freshContent = await (await fetch(res.data.cloudinaryUrl)).text();
 
-      updateTabContent(tab.file._id, latest);
-      setStatus("Updated ✓");
-    } catch {
-      setStatus("Pull failed");
+      setOpenTabs((prev) =>
+        prev.map((t) =>
+          t.file._id === tab.file._id ? { ...t, content: freshContent } : t
+        )
+      );
+
+      setStatus("Latest version pulled ✔");
+    } catch (err) {
+      setStatus("Pull failed ❌");
     }
   };
 
-  /* -------- Close tab -------- */
-  const closeTab = (id) => {
-    const updated = openTabs.filter((t) => t.file._id !== id);
-    setOpenTabs(updated);
-    if (activeTab === id) setActiveTab(updated[0]?.file._id || null);
+  // ---------------- Close Tab ------------------------
+  const closeTab = (fileId) => {
+    const newTabs = openTabs.filter((t) => t.file._id !== fileId);
+    setOpenTabs(newTabs);
+
+    if (activeTab === fileId) {
+      setActiveTab(newTabs.length ? newTabs[0].file._id : null);
+    }
   };
+
+  useEffect(() => {
+    loadFiles();
+  }, [repoId]);
 
   const active = openTabs.find((t) => t.file._id === activeTab);
 
   return (
     <div style={styles.wrapper}>
-      {/* Top Bar */}
+      {/* ---- Top Bar ---- */}
       <div style={styles.topBar}>
         <button
           style={styles.menuBtn}
-          onClick={() => setSidebarOpen((prev) => !prev)}
+          onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          {sidebarOpen ? "📁 Hide Files" : "📂 Show Files"}
+          Menu
         </button>
-        <h3 style={{ margin: 0 }}>Codespace</h3>
+        <h3 style={{ margin: 0, color: "#fff" }}>Codespace</h3>
       </div>
 
-      {/* Sidebar */}
+      {/* ---- Sidebar ---- */}
       <aside
         style={{
           ...styles.sidebar,
-          left: sidebarOpen ? "0" : "-270px",
+          transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
         }}
       >
         <h4>Files</h4>
+        {files.length === 0 && <p>No files yet.</p>}
 
         {files.map((file) => (
           <div
             key={file._id}
-            onClick={() => openFile(file)}
             style={{
               ...styles.fileItem,
-              background: file._id === activeTab ? "#3c3c3c" : "transparent",
+              background: activeTab === file._id ? "#3c3c3c" : "transparent",
             }}
+            onClick={() => openFile(file)}
           >
             {file.name}
           </div>
         ))}
 
         <Link to={`/repo/${repoId}`} style={styles.backBtn}>
-          ⬅ Back
+          Back to Repo
         </Link>
       </aside>
 
-      {/* MAIN (Auto resizes when sidebar hides) */}
+      {/* ---- Editor Area ---- */}
       <main
         style={{
           ...styles.main,
-          marginLeft: sidebarOpen ? 250 : 0,
+          marginLeft: sidebarOpen ? "250px" : "0", // ← full width when sidebar closed
+          transition: "margin-left 0.3s ease",
         }}
       >
         {/* Tabs */}
@@ -149,11 +170,11 @@ export default function Codespace() {
           {openTabs.map((tab) => (
             <div
               key={tab.file._id}
-              onClick={() => setActiveTab(tab.file._id)}
               style={{
                 ...styles.tab,
                 background: activeTab === tab.file._id ? "#1e1e1e" : "#3c3c3c",
               }}
+              onClick={() => setActiveTab(tab.file._id)}
             >
               {tab.file.name}
               <span
@@ -163,7 +184,7 @@ export default function Codespace() {
                   closeTab(tab.file._id);
                 }}
               >
-                ✖
+                x
               </span>
             </div>
           ))}
@@ -172,138 +193,153 @@ export default function Codespace() {
         {/* Editor */}
         <div style={{ flex: 1 }}>
           {!active ? (
-            <div style={styles.emptyMessage}>Open a file to start editing</div>
+            <h3 style={styles.emptyText}>Select a file to begin editing</h3>
           ) : (
             <Editor
               height="100%"
               theme="vs-dark"
               value={active.content}
+              defaultLanguage="javascript"
               onChange={(v) => updateTabContent(activeTab, v)}
-              options={{
-                fontSize: 15,
-                minimap: { enabled: false },
-                smoothScrolling: true,
-              }}
+              options={{ fontSize: 14, minimap: { enabled: false } }}
             />
           )}
         </div>
 
-        {/* Actions */}
+        {/* Footer */}
         {active && (
-          <footer style={styles.footer}>
+          <div style={styles.footer}>
             <button style={styles.saveBtn} onClick={saveFile}>
-              Push
+              Save
             </button>
             <button style={styles.pullBtn} onClick={pullFile}>
               Pull
             </button>
-            <span style={{ marginLeft: 15, opacity: 0.7 }}>{status}</span>
-          </footer>
+            <span style={{ marginLeft: 20 }}>{status}</span>
+          </div>
         )}
       </main>
     </div>
   );
 }
 
-/* -------- Styles -------- */
+/* ===================== STYLES ===================== */
 const styles = {
   wrapper: {
-    height: "100vh",
-    background: "#1e1e1e",
     display: "flex",
     flexDirection: "column",
+    height: "100vh",
+    background: "#1e1e1e",
   },
+
   topBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
     padding: "10px",
     background: "#2d2d2d",
     borderBottom: "1px solid #444",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    color: "#fff",
   },
+
   menuBtn: {
     background: "#444",
     color: "#fff",
-    padding: "6px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
+    padding: "6px 10px",
     border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
   },
+
   sidebar: {
-    position: "absolute",
-    top: 50,
-    bottom: 0,
-    width: 250,
+    width: "250px",
     background: "#252526",
-    borderRight: "1px solid #333",
-    padding: 10,
-    transition: "0.35s",
     color: "white",
+    padding: "10px",
+    borderRight: "1px solid #333",
     overflowY: "auto",
-    zIndex: 10,
+    transition: "0.3s",
+    position: "absolute",
+    top: "50px",
+    height: "calc(100vh - 50px)",
+    zIndex: 20,
   },
+
+  backBtn: {
+    marginTop: "15px",
+    display: "block",
+    padding: "8px",
+    background: "#444",
+    textAlign: "center",
+    color: "white",
+    borderRadius: "6px",
+    textDecoration: "none",
+  },
+
   fileItem: {
     padding: "8px",
     cursor: "pointer",
-    borderRadius: 6,
-    marginBottom: 6,
-    transition: "0.2s",
+    borderRadius: "4px",
+    marginBottom: "6px",
   },
-  backBtn: {
-    display: "block",
-    marginTop: 12,
-    padding: 8,
-    textAlign: "center",
-    background: "#444",
-    borderRadius: 6,
-    color: "white",
-    textDecoration: "none",
-  },
+
   main: {
     flex: 1,
+    marginLeft: "250px",
     display: "flex",
     flexDirection: "column",
-    transition: "0.4s",
-    overflow: "hidden",
   },
+
   tabs: {
     display: "flex",
     background: "#2d2d2d",
-    padding: 6,
-    gap: 5,
+    padding: "5px",
     overflowX: "auto",
+    gap: "5px",
   },
+
   tab: {
     padding: "6px 10px",
-    borderRadius: "6px 6px 0 0",
+    color: "white",
     cursor: "pointer",
-    color: "#fff",
-    whiteSpace: "nowrap",
-  },
-  close: { marginLeft: 8, cursor: "pointer", opacity: 0.7 },
-  emptyMessage: { color: "#ccc", padding: 20, textAlign: "center" },
-  footer: {
-    padding: 10,
-    borderTop: "1px solid #333",
-    background: "#202020",
-    display: "flex",
+    borderRadius: "4px 4px 0 0",
+    display: "inline-flex",
     alignItems: "center",
-    color: "#ccc",
   },
+
+  close: {
+    marginLeft: "8px",
+    cursor: "pointer",
+    color: "#bbb",
+  },
+
+  emptyText: {
+    color: "white",
+    padding: "20px",
+  },
+
+  footer: {
+    padding: "10px",
+    background: "#252526",
+    borderTop: "1px solid #333",
+    color: "#9f9",
+  },
+
   saveBtn: {
     background: "#238636",
-    padding: "8px 14px",
-    borderRadius: 6,
     border: "none",
-    color: "#fff",
+    padding: "8px 12px",
+    marginRight: "10px",
+    borderRadius: "6px",
+    color: "white",
+    cursor: "pointer",
   },
+
   pullBtn: {
     background: "#1f6feb",
-    padding: "8px 14px",
-    borderRadius: 6,
     border: "none",
-    marginLeft: 10,
-    color: "#fff",
+    padding: "8px 12px",
+    borderRadius: "6px",
+    color: "white",
+    cursor: "pointer",
   },
 };
