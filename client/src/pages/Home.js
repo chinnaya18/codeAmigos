@@ -1,313 +1,487 @@
+// client/src/pages/Home.js
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import API from "../services/api";
-import logodraft from "./logodraft.png";
+import logo from "./logodraft.png";
 
 export default function Home() {
-  const { token } = useContext(AuthContext);
+  const { token, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
 
   const [repos, setRepos] = useState([]);
   const [popularRepos, setPopularRepos] = useState([]);
   const [events, setEvents] = useState([]);
-
-  const [leftOpen, setLeftOpen] = useState(false);
-  const [rightOpen, setRightOpen] = useState(false);
-
-  const headerHeight = 60;
-
-  /* Detect screen responsiveness live */
-  const [mobile, setMobile] = useState(window.innerWidth < 992);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const resizeCheck = () => setMobile(window.innerWidth < 992);
-    window.addEventListener("resize", resizeCheck);
-    return () => window.removeEventListener("resize", resizeCheck);
-  }, []);
-
-  /* Load Everything */
-  useEffect(() => {
-    if (!token) return;
-
+    if (!token) {
+      navigate("/signin");
+      return;
+    }
     (async () => {
       try {
-        const myRepos = await API.get("/repos/myrepos");
-        setRepos(myRepos.data.repos || myRepos.data);
-
-        const popular = await API.get("/repos/popular/all");
-        setPopularRepos(popular.data.repos || popular.data);
-
-        const ev = await API.get("/events");
-        setEvents(ev.data.events);
+        const [myRepos, popular, ev] = await Promise.all([
+          API.get("/repos/myrepos"),
+          API.get("/repos/popular/all").catch(() => ({ data: { repos: [] } })),
+          API.get("/events").catch(() => ({ data: { events: [] } })),
+        ]);
+        setRepos(myRepos.data.repos || myRepos.data || []);
+        setPopularRepos(popular.data.repos || popular.data || []);
+        setEvents(ev.data.events || ev.data || []);
       } catch (err) {
         console.error("Fetch failed:", err);
+      } finally {
+        setLoading(false);
       }
     })();
-  }, [location.key, token]);
+  }, [location.key, token, navigate]);
+
+  const filteredRepos = repos.filter((r) =>
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const timeAgo = (date) => {
+    const s = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (s < 60) return "just now";
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    if (s < 2592000) return `${Math.floor(s / 86400)}d ago`;
+    return new Date(date).toLocaleDateString();
+  };
+
+  if (!token) return null;
 
   return (
-    <div style={styles.page}>
-      {/* ---------- NAVBAR ---------- */}
-      <nav style={styles.navbar}>
-        {/* LEFT AREA */}
-        <div style={styles.navLeft}>
-          {mobile && (
-            <button style={styles.iconButton} onClick={() => setLeftOpen(true)}>
-              ☰
-            </button>
-          )}
-
-          <img
-            src={logodraft}
-            width="36"
-            height="36"
-            alt="logo"
-            style={styles.logo}
-          />
-
-          {!mobile && (
-            <input placeholder="Search repositories..." style={styles.search} />
-          )}
+    <div style={S.page}>
+      {/* Navbar */}
+      <nav style={S.navbar}>
+        <div style={S.navLeft}>
+          <img src={logo} alt="CodeAmigos" style={S.navLogoImg} />
+          <span style={S.navBrand}>CodeAmigos</span>
         </div>
-
-        {/* RIGHT AREA */}
-        <div style={styles.navRight}>
-          {/* Create Repo (+ Button) */}
-          <button
-            style={styles.iconButton}
-            title="New Repository"
-            onClick={() => navigate("/newrepo")}
-          >
-            ➕
+        <div style={S.navCenter}>
+          <input
+            style={S.searchInput}
+            placeholder="Search repositories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div style={S.navRight}>
+          <button style={S.navBtn} onClick={() => navigate("/explore")}>
+            🔍 Explore
           </button>
-
-          {/* Bell Notification Button */}
           <button
-            style={styles.iconButton}
-            title="Notifications"
+            style={S.navBtnIcon}
             onClick={() => navigate("/notifications")}
           >
             🔔
           </button>
-
-          {/* Profile */}
-          <img
-            src={logodraft}
-            width="35"
-            height="35"
-            alt="profile"
-            style={styles.profile}
-            onClick={() => navigate("/profile")}
-          />
+          <button style={S.navBtn} onClick={() => navigate("/newrepo")}>
+            + New
+          </button>
+          <div style={S.avatarCircle} onClick={() => navigate("/profile")}>
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt=""
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              user?.username?.charAt(0).toUpperCase() || "U"
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* ---------- MAIN LAYOUT ---------- */}
-      <div style={styles.layout(mobile, headerHeight)}>
-        {/* -------- LEFT SIDEBAR -------- */}
-        {(leftOpen || !mobile) && (
-          <aside style={styles.leftSidebar(mobile, headerHeight)}>
-            <h5 style={styles.sidebarHeader}>Your Repositories</h5>
-
-            {repos.map((repo) => (
-              <div
-                key={repo._id}
-                style={styles.sidebarItem}
-                onClick={() => {
-                  navigate(`/repo/${repo._id}`);
-                  setLeftOpen(false);
-                }}
-              >
-                {repo.name}
-              </div>
-            ))}
-
-            {mobile && (
-              <button
-                style={styles.closeButton}
-                onClick={() => setLeftOpen(false)}
-              >
-                Close
-              </button>
-            )}
-          </aside>
-        )}
-
-        {/* -------- MAIN CONTENT -------- */}
-        <main style={styles.main(mobile, headerHeight)}>
-          <h2 style={styles.title}> Welcome to CodeAmigos</h2>
-          <p style={styles.subText}>Collaborate, code and share together.</p>
-
-          <h3 style={styles.section}>📅 Upcoming Events</h3>
-
-          {events.length === 0 && (
-            <p style={styles.placeholder}>No events scheduled.</p>
-          )}
-
-          {events.map((ev) => (
-            <div key={ev._id} style={styles.eventCard}>
-              <h5>{ev.title}</h5>
-              <p>{ev.description}</p>
-              <small style={{ color: "#58a6ff" }}>{ev.date}</small>
+      {loading ? (
+        <div style={S.loadingBox}>Loading...</div>
+      ) : (
+        <div style={S.body}>
+          {/* Left Column - My Repos */}
+          <div style={S.leftCol}>
+            <div style={S.sectionHeader}>
+              <h3 style={S.sectionTitle}>📁 My Repositories</h3>
             </div>
-          ))}
-        </main>
 
-        {/* -------- RIGHT SIDEBAR -------- */}
-        {(rightOpen || !mobile) && (
-          <aside style={styles.rightSidebar(mobile, headerHeight)}>
-            <h5 style={styles.sidebarHeader}> Popular Repositories</h5>
-
-            {popularRepos.map((repo) => (
-              <div
-                key={repo._id}
-                style={styles.sidebarItem}
-                onClick={() => {
-                  navigate(`/repo/${repo._id}`);
-                  setRightOpen(false);
-                }}
-              >
-                {repo.name} — {repo.views} views
+            {filteredRepos.length === 0 ? (
+              <div style={S.emptyCard}>
+                <p style={S.emptyText}>
+                  {searchTerm
+                    ? "No repos match your search."
+                    : "You have no repositories yet."}
+                </p>
+                {!searchTerm && (
+                  <button
+                    style={S.createBtn}
+                    onClick={() => navigate("/newrepo")}
+                  >
+                    Create Your First Repo
+                  </button>
+                )}
               </div>
-            ))}
-
-            {mobile && (
-              <button
-                style={styles.closeButton}
-                onClick={() => setRightOpen(false)}
-              >
-                Close
-              </button>
+            ) : (
+              filteredRepos.map((r) => (
+                <div
+                  key={r._id}
+                  style={S.repoCard}
+                  onClick={() => navigate(`/repo/${r._id}`)}
+                >
+                  <div style={S.repoCardTop}>
+                    <span style={S.repoIcon}>
+                      {r.visibility === "private" ? "🔒" : "📁"}
+                    </span>
+                    <span style={S.repoCardName}>{r.name}</span>
+                    <span style={S.visBadge}>{r.visibility}</span>
+                  </div>
+                  {r.description && (
+                    <p style={S.repoCardDesc}>{r.description}</p>
+                  )}
+                  <div style={S.repoCardMeta}>
+                    <span style={S.metaItem}>⭐ {r.stars?.length || 0}</span>
+                    <span style={S.metaItem}>🍴 {r.forks?.length || 0}</span>
+                    <span style={S.metaItem}>👁 {r.views || 0}</span>
+                    <span style={S.metaTime}>{timeAgo(r.createdAt)}</span>
+                  </div>
+                </div>
+              ))
             )}
-          </aside>
-        )}
-      </div>
+          </div>
+
+          {/* Right Column */}
+          <div style={S.rightCol}>
+            {/* Welcome Card */}
+            <div style={S.welcomeCard}>
+              <h2 style={S.welcomeTitle}>
+                Welcome back, {user?.username || "User"}! 👋
+              </h2>
+              <p style={S.welcomeDesc}>
+                Start coding, collaborate with friends, and build amazing
+                projects.
+              </p>
+              <div style={S.quickActions}>
+                <button style={S.quickBtn} onClick={() => navigate("/explore")}>
+                  🔍 Explore
+                </button>
+                <button style={S.quickBtn} onClick={() => navigate("/profile")}>
+                  👤 Profile
+                </button>
+              </div>
+            </div>
+
+            {/* Popular Repos */}
+            {popularRepos.length > 0 && (
+              <div style={S.section}>
+                <h3 style={S.sectionTitle}>🔥 Popular Repositories</h3>
+                {popularRepos.slice(0, 5).map((r) => (
+                  <div
+                    key={r._id}
+                    style={S.popularCard}
+                    onClick={() => navigate(`/repo/${r._id}`)}
+                  >
+                    <div style={S.popularTop}>
+                      <span style={S.popularOwner}>
+                        {r.owner?.username || "user"} /
+                      </span>
+                      <span style={S.popularName}>{r.name}</span>
+                    </div>
+                    {r.description && (
+                      <p style={S.popularDesc}>{r.description}</p>
+                    )}
+                    <div style={S.popularMeta}>
+                      <span style={S.metaItem}>⭐ {r.stars?.length || 0}</span>
+                      <span style={S.metaItem}>👁 {r.views || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Events */}
+            {events.length > 0 && (
+              <div style={S.section}>
+                <h3 style={S.sectionTitle}>📅 Upcoming Events</h3>
+                {events.slice(0, 5).map((e) => (
+                  <div key={e._id} style={S.eventCard}>
+                    <div style={S.eventDate}>
+                      <span style={S.eventMonth}>
+                        {new Date(e.date).toLocaleString("default", {
+                          month: "short",
+                        })}
+                      </span>
+                      <span style={S.eventDay}>
+                        {new Date(e.date).getDate()}
+                      </span>
+                    </div>
+                    <div>
+                      <p style={S.eventTitle}>{e.title}</p>
+                      <p style={S.eventDesc}>{e.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <footer style={S.footer}>
+        &copy; {new Date().getFullYear()} CodeAmigos
+      </footer>
     </div>
   );
 }
 
-/* ---------- Styles ---------- */
-
-const styles = {
-  page: { background: "#0d1117", minHeight: "100vh", color: "#fff" },
+const S = {
+  page: {
+    background: "#0d1117",
+    minHeight: "100vh",
+    color: "#e6edf3",
+    fontFamily:
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
+    paddingTop: 64,
+  },
 
   navbar: {
-    height: 60,
     background: "#161b22",
-    padding: "0 16px",
+    height: 60,
     borderBottom: "1px solid #30363d",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    position: "sticky",
+    padding: "0 20px",
+    position: "fixed",
     top: 0,
+    left: 0,
+    right: 0,
     zIndex: 100,
+    boxSizing: "border-box",
   },
-
   navLeft: { display: "flex", alignItems: "center", gap: 10 },
-  navRight: { display: "flex", gap: 10, alignItems: "center" },
-
-  logo: { borderRadius: "50%" },
-
-  iconButton: {
-    fontSize: 20,
+  navCenter: { flex: 1, maxWidth: 400, margin: "0 20px" },
+  navRight: { display: "flex", alignItems: "center", gap: 8 },
+  navLogo: { fontSize: 22, fontWeight: 900, color: "#58a6ff" },
+  navLogoImg: { height: 32, width: 32, borderRadius: 6, objectFit: "contain" },
+  navBrand: { fontSize: 18, fontWeight: 700, color: "#fff" },
+  searchInput: {
+    width: "100%",
+    padding: "7px 14px",
+    borderRadius: 6,
+    background: "#0d1117",
+    border: "1px solid #30363d",
+    color: "#e6edf3",
+    fontSize: 14,
+    outline: "none",
+  },
+  navBtn: {
     background: "#21262d",
+    border: "1px solid #30363d",
+    padding: "6px 12px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+  },
+  navBtnIcon: {
+    background: "transparent",
     border: "1px solid #30363d",
     padding: "6px 10px",
     borderRadius: 6,
+    color: "#e6edf3",
     cursor: "pointer",
-    color: "#fff",
-  },
-
-  search: {
-    width: 230,
-    padding: "6px 10px",
-    borderRadius: 6,
-    background: "#21262d",
-    border: "1px solid #30363d",
-    color: "#fff",
-  },
-
-  profile: {
-    borderRadius: "50%",
-    cursor: "pointer",
-    border: "2px solid #30363d",
-  },
-
-  layout: (mobile, h) => ({
-    display: "flex",
-    flexDirection: mobile ? "column" : "row",
-  }),
-
-  leftSidebar: (mobile, h) => ({
-    width: mobile ? "100%" : 280,
-    position: mobile ? "fixed" : "sticky",
-    top: h,
-    height: `calc(100vh - ${h}px)`,
-    background: "#161b22",
-    borderRight: "1px solid #30363d",
-    padding: 15,
-    overflowY: "auto",
-    zIndex: 99,
-  }),
-
-  rightSidebar: (mobile, h) => ({
-    width: mobile ? "100%" : 280,
-    position: mobile ? "fixed" : "sticky",
-    top: h,
-    height: `calc(100vh - ${h}px)`,
-    background: "#161b22",
-    borderLeft: "1px solid #30363d",
-    padding: 15,
-    overflowY: "auto",
-    zIndex: 99,
-  }),
-
-  sidebarHeader: {
-    borderBottom: "1px solid #30363d",
-    paddingBottom: 6,
-    marginBottom: 10,
     fontSize: 16,
+  },
+  navBtnGhost: {
+    background: "transparent",
+    border: "none",
+    color: "#8b949e",
+    cursor: "pointer",
+    fontSize: 13,
+  },
+  avatarCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: "50%",
+    background: "#238636",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 15,
+    overflow: "hidden",
+  },
+
+  body: {
+    display: "flex",
+    gap: 24,
+    maxWidth: 1200,
+    margin: "0 auto",
+    padding: "24px 20px",
+  },
+  leftCol: { width: 350, flexShrink: 0 },
+  rightCol: { flex: 1, minWidth: 0 },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: 600, margin: 0, color: "#e6edf3" },
+  newRepoBtn: {
+    background: "#238636",
+    border: "1px solid #2ea043",
+    padding: "4px 12px",
+    borderRadius: 6,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 12,
     fontWeight: 600,
   },
 
-  sidebarItem: {
-    background: "#21262d",
-    padding: 10,
-    marginTop: 6,
-    cursor: "pointer",
+  repoCard: {
+    background: "#161b22",
+    border: "1px solid #21262d",
     borderRadius: 6,
+    padding: "12px 14px",
+    marginBottom: 8,
+    cursor: "pointer",
+    transition: "border-color 0.15s",
   },
+  repoCardTop: { display: "flex", alignItems: "center", gap: 8 },
+  repoIcon: { fontSize: 14 },
+  repoCardName: { fontWeight: 600, fontSize: 14, color: "#58a6ff" },
+  visBadge: {
+    background: "transparent",
+    border: "1px solid #30363d",
+    color: "#8b949e",
+    padding: "0 8px",
+    borderRadius: 12,
+    fontSize: 11,
+  },
+  repoCardDesc: {
+    color: "#8b949e",
+    fontSize: 13,
+    margin: "6px 0 0",
+    lineHeight: 1.4,
+  },
+  repoCardMeta: {
+    display: "flex",
+    gap: 12,
+    marginTop: 8,
+    fontSize: 12,
+    color: "#484f58",
+  },
+  metaItem: { display: "flex", alignItems: "center", gap: 3 },
+  metaTime: { marginLeft: "auto" },
 
-  closeButton: {
-    background: "#b42323",
-    border: "1px solid #da3633",
-    padding: 10,
-    marginTop: 15,
+  emptyCard: {
+    background: "#161b22",
+    border: "1px solid #21262d",
+    borderRadius: 8,
+    padding: 24,
+    textAlign: "center",
+  },
+  emptyText: { color: "#484f58", fontSize: 14, margin: "0 0 12px" },
+  createBtn: {
+    background: "#238636",
+    border: "1px solid #2ea043",
+    padding: "8px 20px",
+    borderRadius: 6,
     color: "#fff",
-    borderRadius: 6,
     cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 14,
   },
 
-  main: (mobile, h) => ({
-    flex: 1,
-    padding: 25,
-    marginTop: mobile ? h : 0,
-  }),
+  welcomeCard: {
+    background: "#161b22",
+    border: "1px solid #21262d",
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 20,
+  },
+  welcomeTitle: { fontSize: 20, fontWeight: 600, margin: "0 0 8px" },
+  welcomeDesc: { color: "#8b949e", fontSize: 14, margin: "0 0 14px" },
+  quickActions: { display: "flex", gap: 8, flexWrap: "wrap" },
+  quickBtn: {
+    background: "#21262d",
+    border: "1px solid #30363d",
+    padding: "8px 14px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+  },
 
-  title: { fontSize: 26, marginBottom: 4 },
-  subText: { opacity: 0.7 },
-  section: { marginTop: 30, fontSize: 20 },
+  section: { marginBottom: 20 },
+  popularCard: {
+    background: "#161b22",
+    border: "1px solid #21262d",
+    borderRadius: 6,
+    padding: "10px 14px",
+    marginTop: 8,
+    cursor: "pointer",
+  },
+  popularTop: { display: "flex", alignItems: "center", gap: 4 },
+  popularOwner: { color: "#8b949e", fontSize: 13 },
+  popularName: { color: "#58a6ff", fontSize: 14, fontWeight: 600 },
+  popularDesc: { color: "#8b949e", fontSize: 12, margin: "4px 0 0" },
+  popularMeta: {
+    display: "flex",
+    gap: 10,
+    marginTop: 6,
+    fontSize: 12,
+    color: "#484f58",
+  },
 
   eventCard: {
+    display: "flex",
+    gap: 14,
     background: "#161b22",
-    padding: 15,
-    borderRadius: 10,
-    border: "1px solid #30363d",
-    marginTop: 10,
+    border: "1px solid #21262d",
+    borderRadius: 6,
+    padding: "10px 14px",
+    marginTop: 8,
   },
+  eventDate: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#21262d",
+    borderRadius: 6,
+    padding: "6px 12px",
+    minWidth: 50,
+  },
+  eventMonth: {
+    fontSize: 11,
+    color: "#f78166",
+    fontWeight: 600,
+    textTransform: "uppercase",
+  },
+  eventDay: { fontSize: 20, fontWeight: 700, color: "#e6edf3" },
+  eventTitle: { fontWeight: 600, fontSize: 14, margin: "0 0 4px" },
+  eventDesc: { color: "#8b949e", fontSize: 12, margin: 0 },
 
-  placeholder: { opacity: 0.6, marginTop: 5 },
+  loadingBox: { textAlign: "center", color: "#8b949e", paddingTop: 80 },
+  footer: {
+    marginTop: 40,
+    textAlign: "center",
+    color: "#484f58",
+    paddingBottom: 30,
+    fontSize: 13,
+  },
 };

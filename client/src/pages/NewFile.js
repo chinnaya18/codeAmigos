@@ -1,192 +1,241 @@
+// client/src/pages/NewFile.js
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
-import logodraft from "./logodraft.png";
+import logo from "./logodraft.png";
 
 export default function NewFile() {
   const { repoId } = useParams();
   const navigate = useNavigate();
 
   const [file, setFile] = useState(null);
+  const [commitMsg, setCommitMsg] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [status, setStatus] = useState("");
 
   const upload = async () => {
     if (!file) return setError("Please select a file.");
     setError("");
     setUploading(true);
-    setStatus("Uploading...");
-
     try {
       const fd = new FormData();
       fd.append("file", file);
-
+      if (commitMsg.trim()) fd.append("commitMessage", commitMsg.trim());
       await API.post(`/files/${repoId}/upload`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
-      setStatus("Upload complete.");
-      setTimeout(() => navigate(`/repo/${repoId}`), 800);
+      navigate(`/repo/${repoId}`);
     } catch (err) {
-      setError("Upload failed. Try again.");
+      setError(err.response?.data?.msg || "Upload failed.");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div style={styles.page}>
-      {/* ---------- NAVBAR ---------- */}
-      <nav style={styles.navbar}>
-        <div style={styles.navLeft}>
-          <img src={logodraft} alt="logo" style={styles.logo} />
-          <span style={styles.navTitle}>CodeAmigos</span>
+    <div style={S.page}>
+      <nav style={S.navbar}>
+        <div style={S.navLeft}>
+          <img
+            src={logo}
+            alt="CodeAmigos"
+            style={S.navLogoImg}
+            onClick={() => navigate("/home")}
+          />
+          <span style={S.navBrand}>CodeAmigos</span>
         </div>
-
-        <button style={styles.navButton} onClick={() => navigate("/home")}>
-          Home
+        <button style={S.navBtn} onClick={() => navigate(`/repo/${repoId}`)}>
+          ← Back to Repo
         </button>
       </nav>
 
-      {/* ---------- CONTENT ---------- */}
-      <div style={styles.wrapper}>
-        <div style={styles.card}>
-          <h2 style={styles.title}>Upload File</h2>
+      <div style={S.container}>
+        <h2 style={S.title}>Add a new file</h2>
+        <p style={S.subtitle}>Upload a file to your repository</p>
 
-          {error && <p style={styles.error}>{error}</p>}
-          {status && <p style={styles.status}>{status}</p>}
+        {error && <div style={S.errorBox}>{error}</div>}
 
-          <input
-            type="file"
-            style={styles.fileInput}
-            onChange={(e) => setFile(e.target.files[0])}
-          />
+        <div style={S.card}>
+          <div style={S.dropZone}>
+            <input
+              type="file"
+              onChange={(e) => setFile(e.target.files[0])}
+              style={S.fileInput}
+              id="fileUpload"
+            />
+            <label htmlFor="fileUpload" style={S.dropLabel}>
+              <span style={S.dropIcon}>📁</span>
+              <span style={S.dropText}>
+                {file ? file.name : "Click to choose a file"}
+              </span>
+              {file && (
+                <span style={S.fileSize}>
+                  {(file.size / 1024).toFixed(1)} KB
+                </span>
+              )}
+            </label>
+          </div>
 
-          <button
-            style={{
-              ...styles.uploadBtn,
-              opacity: uploading ? 0.7 : 1,
-              cursor: uploading ? "wait" : "pointer",
-            }}
-            onClick={upload}
-            disabled={uploading}
-          >
-            {uploading ? "Uploading..." : "Upload File"}
-          </button>
+          <div style={S.commitSection}>
+            <label style={S.label}>Commit message</label>
+            <input
+              style={S.input}
+              value={commitMsg}
+              onChange={(e) => setCommitMsg(e.target.value)}
+              placeholder={file ? `Add ${file.name}` : "Add new file"}
+            />
+          </div>
+
+          <div style={S.actions}>
+            <button
+              style={S.cancelBtn}
+              onClick={() => navigate(`/repo/${repoId}`)}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ ...S.submitBtn, opacity: uploading ? 0.6 : 1 }}
+              onClick={upload}
+              disabled={uploading}
+            >
+              {uploading ? "Uploading..." : "📤 Upload File"}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* ---------- FOOTER ---------- */}
-      <footer style={styles.footer}>
-        © 2025 CodeAmigos — File Upload Panel
-      </footer>
     </div>
   );
 }
 
-/* ---------- PROFESSIONAL UI STYLE ---------- */
-
-const styles = {
+const S = {
   page: {
     background: "#0d1117",
     minHeight: "100vh",
-    color: "#c9d1d9",
-    fontFamily: "Inter, sans-serif",
-    paddingTop: 80,
+    color: "#e6edf3",
+    paddingTop: 64,
+    fontFamily:
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
   },
-
   navbar: {
-    height: 60,
     background: "#161b22",
+    height: 60,
     borderBottom: "1px solid #30363d",
-    padding: "0 20px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    padding: "0 20px",
     position: "fixed",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
+    boxSizing: "border-box",
+  },
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
+  navLogoImg: {
+    height: 32,
+    width: 32,
+    borderRadius: 6,
+    objectFit: "contain",
+    cursor: "pointer",
+  },
+  navLogo: {
+    fontSize: 22,
+    fontWeight: 900,
+    color: "#58a6ff",
+    cursor: "pointer",
+  },
+  navBrand: { fontSize: 18, fontWeight: 700, color: "#fff" },
+  navBtn: {
+    background: "#21262d",
+    border: "1px solid #30363d",
+    padding: "6px 14px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 13,
   },
 
-  navLeft: { display: "flex", alignItems: "center", gap: 10 },
-  navTitle: { fontSize: 20, fontWeight: 600 },
-  logo: { width: 34, height: 34, borderRadius: "6px" },
+  container: { maxWidth: 600, margin: "0 auto", padding: "30px 20px" },
+  title: { fontSize: 24, fontWeight: 600, margin: "0 0 4px" },
+  subtitle: { color: "#8b949e", fontSize: 14, margin: "0 0 20px" },
+  errorBox: {
+    background: "#3d1a1a",
+    padding: "10px 14px",
+    borderRadius: 6,
+    marginBottom: 14,
+    color: "#f85149",
+    border: "1px solid #f85149",
+    fontSize: 14,
+  },
 
-  navButton: {
+  card: {
+    background: "#161b22",
+    border: "1px solid #30363d",
+    borderRadius: 8,
+    padding: 24,
+  },
+  dropZone: { marginBottom: 20 },
+  fileInput: { display: "none" },
+  dropLabel: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
+    padding: 30,
+    border: "2px dashed #30363d",
+    borderRadius: 8,
+    cursor: "pointer",
+    textAlign: "center",
+  },
+  dropIcon: { fontSize: 32 },
+  dropText: { color: "#58a6ff", fontSize: 14, fontWeight: 500 },
+  fileSize: { color: "#8b949e", fontSize: 12 },
+
+  commitSection: { marginBottom: 20 },
+  label: {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#c9d1d9",
+    marginBottom: 6,
+  },
+  input: {
+    width: "100%",
+    padding: "8px 12px",
+    borderRadius: 6,
+    background: "#0d1117",
+    border: "1px solid #30363d",
+    color: "#e6edf3",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+  },
+
+  actions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+    paddingTop: 10,
+    borderTop: "1px solid #21262d",
+  },
+  cancelBtn: {
+    background: "#21262d",
+    border: "1px solid #30363d",
+    padding: "8px 18px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 14,
+  },
+  submitBtn: {
     background: "#238636",
     border: "1px solid #2ea043",
     padding: "8px 18px",
     borderRadius: 6,
-    fontWeight: 600,
+    color: "#fff",
     cursor: "pointer",
-    color: "#fff",
-  },
-
-  wrapper: {
-    display: "flex",
-    justifyContent: "center",
-    padding: "20px",
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: "450px",
-    background: "#161b22",
-    border: "1px solid #30363d",
-    borderRadius: "12px",
-    padding: "25px",
-  },
-
-  title: { fontSize: "22px", marginBottom: 20, fontWeight: 600 },
-
-  fileInput: {
-    width: "100%",
-    padding: "12px",
-    background: "#0d1117",
-    border: "1px solid #30363d",
-    borderRadius: "6px",
-    color: "#c9d1d9",
-    marginBottom: 20,
-  },
-
-  uploadBtn: {
-    width: "100%",
-    padding: "12px",
-    background: "#238636",
-    border: "1px solid #2ea043",
-    borderRadius: "6px",
     fontWeight: 600,
-    fontSize: "15px",
-    color: "#fff",
-  },
-
-  status: {
-    background: "#1b472b",
-    padding: "10px",
-    borderRadius: "6px",
-    color: "#8bf59b",
-    marginBottom: 15,
-    fontSize: "14px",
-    textAlign: "center",
-  },
-
-  error: {
-    background: "#612525",
-    border: "1px solid #da3633",
-    padding: "10px",
-    borderRadius: "6px",
-    marginBottom: 15,
-    color: "#ffb3b3",
-    textAlign: "center",
-  },
-
-  footer: {
-    marginTop: 40,
-    textAlign: "center",
-    color: "#8b949e",
-    paddingBottom: 30,
+    fontSize: 14,
   },
 };

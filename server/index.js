@@ -22,7 +22,7 @@ app.use(
   cors({
     origin: "*",
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
@@ -37,15 +37,19 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/collab", collabRoutes);
 app.use("/api/powerbi", powerbiRoutes);
-app.use("/profile", profileRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/notifications", notifRoutes);
 
 const PORT = process.env.PORT || 5050;
+const setupWebSocket = require("./ws/yws-server");
 
 mongoose
   .connect(process.env.MONGO_URI, {})
   .then(() => {
     console.log("MongoDB connected");
-    app.listen(PORT, () => console.log("Server running on", PORT));
+    const server = app.listen(PORT, () =>
+      console.log("Server running on", PORT),
+    );
+    setupWebSocket(server);
   })
   .catch((err) => console.log(err));

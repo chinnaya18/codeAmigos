@@ -1,6 +1,7 @@
 import axios from "axios";
+
 const API = axios.create({
-  baseURL: "https://codeamigos-p5fj.onrender.com/api",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5050/api",
 });
 
 export function setToken(token) {

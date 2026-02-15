@@ -1,217 +1,309 @@
-import React, { useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+// client/src/pages/Welcome.js
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import logodraft from "./logodraft.png";
+import logo from "./logodraft.png";
 
-const Welcome = () => {
+export default function Welcome() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const sections = document.querySelectorAll("section");
-
-    const handleScroll = () => {
-      const trigger = window.innerHeight / 1.2;
-      sections.forEach((section) => {
-        const top = section.getBoundingClientRect().top;
-        if (top < trigger) section.classList.add("visible");
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToSection = (id) => {
-    document.getElementById(id).scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
-    <div
-      className="bg-dark text-light position-relative"
-      style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif" }}
-    >
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-secondary sticky-top shadow-sm px-3">
-        <div className="container-fluid">
-          <a
-            className="navbar-brand fw-bold d-flex align-items-center"
-            href="#top"
-          >
-            <img
-              src={logodraft}
-              alt="Logo"
-              width="40"
-              height="40"
-              className="me-2 rounded-circle"
-            />
-            CodeAmigos
-          </a>
-
-          {/* Mobile Toggle */}
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navMenu"
-          >
-            <span className="navbar-toggler-icon"></span>
+    <div style={S.page}>
+      <nav style={S.navbar}>
+        <div style={S.navLeft}>
+          <img src={logo} alt="CodeAmigos" style={S.navLogoImg} />
+          <span style={S.navBrand}>CodeAmigos</span>
+        </div>
+        <div style={S.navRight}>
+          <button style={S.signInBtn} onClick={() => navigate("/signin")}>
+            Sign In
           </button>
-
-          <div
-            className="collapse navbar-collapse justify-content-end"
-            id="navMenu"
-          >
-            <button
-              className="btn btn-outline-light me-2 mb-2 mb-lg-0"
-              onClick={() => scrollToSection("features")}
-            >
-              Features
-            </button>
-
-            <button
-              className="btn btn-outline-light me-2 mb-2 mb-lg-0"
-              onClick={() => scrollToSection("explore")}
-            >
-              Explore
-            </button>
-
-            <button
-              className="btn btn-success"
-              onClick={() => navigate("/signin")}
-            >
-              Login
-            </button>
-          </div>
+          <button style={S.signUpBtn} onClick={() => navigate("/signup")}>
+            Sign Up
+          </button>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section
-        className="d-flex flex-column align-items-center justify-content-center text-center px-3"
-        style={{ height: "85vh" }}
-      >
-        <h1 className="fw-bold display-4 mb-3">
-          Collaborative Coding Made Easy
-        </h1>
-
-        <p className="lead text-secondary mb-4 col-md-7">
-          Create repositories, upload files, edit code in-browser, and
-          collaborate in real time — powered by MongoDB, Cloudinary &
-          Codespaces.
-        </p>
-
-        <div className="d-flex gap-3 flex-wrap justify-content-center">
-          <button
-            className="btn btn-success btn-lg px-4"
-            onClick={() => navigate("/signup")}
-          >
-            Get Started
-          </button>
-
-          <button
-            className="btn btn-outline-light btn-lg px-4"
-            onClick={() => scrollToSection("features")}
-          >
-            Learn More
-          </button>
-        </div>
-      </section>
-
-      {/* Explore Section */}
-      <section
-        id="explore"
-        className="bg-secondary bg-opacity-50 py-5 text-center"
-      >
-        <div className="container">
-          <h2 className="fw-bold mb-3">Explore Workspaces</h2>
-          <p className="text-light">
-            Access repositories, preview files, collaborate with other
-            developers — all online.
+      {/* Hero */}
+      <div style={S.hero}>
+        <div style={S.heroContent}>
+          <h1 style={S.heroTitle}>
+            Code together,
+            <br />
+            <span style={S.heroHighlight}>build together.</span>
+          </h1>
+          <p style={S.heroDesc}>
+            CodeAmigos is a collaborative coding platform where developers can
+            create repositories, share code, and work together in real-time.
+            Think GitHub, but made for amigos.
           </p>
-
-          <button
-            className="btn btn-outline-light mt-3"
-            onClick={() => navigate("/home")}
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section
-        id="features"
-        className="bg-secondary bg-opacity-50 py-5 text-center"
-      >
-        <div className="container">
-          <h2 className="fw-bold mb-4">Core Features</h2>
-
-          <div className="row g-4">
-            {[
-              {
-                title: "Cloudinary Storage",
-                desc: "All uploaded files sync to Cloudinary automatically.",
-              },
-              {
-                title: "MongoDB Repo Metadata",
-                desc: "Handles users, repos, files, and collaboration.",
-              },
-              {
-                title: "Built-in Codespace",
-                desc: "Edit files live with syntax highlighting and autosave.",
-              },
-            ].map((feature, idx) => (
-              <div key={idx} className="col-md-4">
-                <div className="p-3 border rounded shadow-sm bg-dark text-light">
-                  <h4 className="fw-bold">{feature.title}</h4>
-                  <p className="text-secondary">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
+          <div style={S.heroBtns}>
+            <button style={S.heroPrimary} onClick={() => navigate("/signup")}>
+              Get Started — it's free
+            </button>
+            <button style={S.heroSecondary} onClick={() => navigate("/signin")}>
+              Sign In →
+            </button>
           </div>
         </div>
-      </section>
+        <div style={S.heroVisual}>
+          <div style={S.codeBlock}>
+            <div style={S.codeHeader}>
+              <span style={S.codeDot} />
+              <span style={{ ...S.codeDot, background: "#f1e05a" }} />
+              <span style={{ ...S.codeDot, background: "#3fb950" }} />
+              <span style={S.codeTitle}>app.js</span>
+            </div>
+            <pre style={S.codeContent}>
+              {`const express = require("express");
+const app = express();
 
-      {/* Join Section */}
-      <section
-        id="login"
-        className="bg-secondary bg-opacity-50 py-5 text-center"
-      >
-        <div className="container">
-          <h2 className="fw-bold mb-3">Join CodeAmigos</h2>
-          <p className="text-light">
-            Sign up and start building your developer workspace today.
-          </p>
+// 🚀 Start building with CodeAmigos
+app.get("/", (req, res) => {
+  res.json({ message: "Hello, Amigo!" });
+});
 
-          <button
-            className="btn btn-outline-light mt-3"
-            onClick={() => navigate("/signup")}
-          >
-            Create Account
-          </button>
+app.listen(3000, () => {
+  console.log("Let's code together! 🎉");
+});`}
+            </pre>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="bg-secondary text-center py-3 text-light">
-        © {new Date().getFullYear()} CodeAmigos — Developer Collaboration
-        Platform
+      {/* Features */}
+      <div style={S.features}>
+        <h2 style={S.featuresTitle}>Everything you need to code</h2>
+        <div style={S.featureGrid}>
+          {[
+            {
+              icon: "📁",
+              title: "Repositories",
+              desc: "Create public or private repos to organize your code.",
+            },
+            {
+              icon: "👥",
+              title: "Collaboration",
+              desc: "Invite collaborators and work on projects together.",
+            },
+            {
+              icon: "⚡",
+              title: "Real-time Editing",
+              desc: "Edit code simultaneously with live sync via WebSocket.",
+            },
+            {
+              icon: "📝",
+              title: "Commit History",
+              desc: "Track every change with detailed commit messages.",
+            },
+            {
+              icon: "⭐",
+              title: "Stars & Forks",
+              desc: "Star your favorite repos and fork them to build upon.",
+            },
+            {
+              icon: "💻",
+              title: "Codespace",
+              desc: "VS Code-like editor in the browser with syntax highlighting.",
+            },
+          ].map((f, i) => (
+            <div key={i} style={S.featureCard}>
+              <span style={S.featureIcon}>{f.icon}</span>
+              <h3 style={S.featureCardTitle}>{f.title}</h3>
+              <p style={S.featureCardDesc}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={S.cta}>
+        <h2 style={S.ctaTitle}>Ready to start coding?</h2>
+        <p style={S.ctaDesc}>
+          Join CodeAmigos and start building projects with your friends.
+        </p>
+        <button style={S.ctaBtn} onClick={() => navigate("/signup")}>
+          Create your free account
+        </button>
+      </div>
+
+      <footer style={S.footer}>
+        &copy; {new Date().getFullYear()} CodeAmigos. Built with ❤️ for
+        developers.
       </footer>
-
-      {/* Scroll Animation */}
-      <style>{`
-        section {
-          opacity: 0;
-          transform: translateY(40px);
-        }
-        .visible {
-          opacity: 1 !important;
-          transform: translateY(0px) !important;
-          transition: 1s ease-in-out;
-        }
-      `}</style>
     </div>
   );
-};
+}
 
-export default Welcome;
+const S = {
+  page: {
+    background: "#0d1117",
+    minHeight: "100vh",
+    color: "#e6edf3",
+    fontFamily:
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
+  },
+
+  navbar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 40px",
+    borderBottom: "1px solid #21262d",
+  },
+  navLeft: { display: "flex", alignItems: "center", gap: 10 },
+  navRight: { display: "flex", gap: 10 },
+  navLogo: { fontSize: 28, fontWeight: 900, color: "#58a6ff" },
+  navLogoImg: { height: 36, width: 36, borderRadius: 6, objectFit: "contain" },
+  navBrand: { fontSize: 22, fontWeight: 700, color: "#fff" },
+  signInBtn: {
+    background: "transparent",
+    border: "1px solid #30363d",
+    padding: "8px 18px",
+    borderRadius: 6,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
+  },
+  signUpBtn: {
+    background: "#238636",
+    border: "1px solid #2ea043",
+    padding: "8px 18px",
+    borderRadius: 6,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 600,
+  },
+
+  hero: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 60,
+    padding: "80px 40px",
+    maxWidth: 1200,
+    margin: "0 auto",
+    flexWrap: "wrap",
+  },
+  heroContent: { flex: 1, minWidth: 320 },
+  heroTitle: {
+    fontSize: 52,
+    fontWeight: 800,
+    lineHeight: 1.1,
+    margin: "0 0 20px",
+  },
+  heroHighlight: { color: "#58a6ff" },
+  heroDesc: {
+    fontSize: 18,
+    color: "#8b949e",
+    lineHeight: 1.6,
+    margin: "0 0 30px",
+    maxWidth: 500,
+  },
+  heroBtns: { display: "flex", gap: 14 },
+  heroPrimary: {
+    background: "#238636",
+    border: "1px solid #2ea043",
+    padding: "14px 28px",
+    borderRadius: 8,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: 700,
+  },
+  heroSecondary: {
+    background: "transparent",
+    border: "1px solid #30363d",
+    padding: "14px 28px",
+    borderRadius: 8,
+    color: "#c9d1d9",
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: 500,
+  },
+
+  heroVisual: { flex: 1, minWidth: 340, maxWidth: 500 },
+  codeBlock: {
+    background: "#161b22",
+    border: "1px solid #30363d",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  codeHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "10px 14px",
+    borderBottom: "1px solid #21262d",
+  },
+  codeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: "50%",
+    background: "#f85149",
+  },
+  codeTitle: { marginLeft: 8, color: "#8b949e", fontSize: 13 },
+  codeContent: {
+    padding: "16px 20px",
+    fontSize: 14,
+    color: "#c9d1d9",
+    lineHeight: 1.6,
+    margin: 0,
+    fontFamily: "'Cascadia Code','Fira Code',Consolas,monospace",
+    overflow: "auto",
+  },
+
+  features: { padding: "60px 40px", maxWidth: 1200, margin: "0 auto" },
+  featuresTitle: {
+    fontSize: 32,
+    fontWeight: 700,
+    textAlign: "center",
+    marginBottom: 40,
+  },
+  featureGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300, 1fr))",
+    gap: 20,
+  },
+  featureCard: {
+    background: "#161b22",
+    border: "1px solid #21262d",
+    borderRadius: 8,
+    padding: "24px 20px",
+  },
+  featureIcon: { fontSize: 28 },
+  featureCardTitle: { fontSize: 18, fontWeight: 600, margin: "12px 0 8px" },
+  featureCardDesc: {
+    color: "#8b949e",
+    fontSize: 14,
+    lineHeight: 1.5,
+    margin: 0,
+  },
+
+  cta: {
+    textAlign: "center",
+    padding: "60px 40px",
+    background: "#161b22",
+    borderTop: "1px solid #21262d",
+  },
+  ctaTitle: { fontSize: 32, fontWeight: 700, margin: "0 0 10px" },
+  ctaDesc: { color: "#8b949e", fontSize: 16, margin: "0 0 24px" },
+  ctaBtn: {
+    background: "#238636",
+    border: "1px solid #2ea043",
+    padding: "14px 32px",
+    borderRadius: 8,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: 700,
+  },
+
+  footer: {
+    padding: "30px 40px",
+    textAlign: "center",
+    color: "#484f58",
+    fontSize: 13,
+  },
+};

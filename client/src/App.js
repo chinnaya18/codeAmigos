@@ -20,6 +20,8 @@ import NewFile from "./pages/NewFile";
 import AdminPanel from "./pages/AdminPanel";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
+import ForgotPassword from "./pages/ForgotPassword";
+import Explore from "./pages/Explore";
 
 import { AuthContext } from "./context/AuthContext";
 
@@ -35,6 +37,7 @@ function App() {
 
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/explore" element={<Explore />} />
 
         <Route path="/repo/:repoId" element={<RepoViewer />} />
         <Route path="/repo/:repoId/file/:fileId" element={<FileViewer />} />
@@ -42,6 +45,7 @@ function App() {
         <Route path="/newrepo" element={<NewRepo />} />
         <Route path="/codespace/:repoId" element={<Codespace />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route
           path="/admin"

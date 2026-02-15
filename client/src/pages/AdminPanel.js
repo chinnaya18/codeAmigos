@@ -1,24 +1,29 @@
 import React, { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContext";
+import logo from "./logodraft.png";
 
 export default function AdminPanel() {
   const { user, logout } = useContext(AuthContext);
-
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ title: "", description: "", date: "" });
-
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("events");
+  const [stats, setStats] = useState({ totalUsers: 0, totalEvents: 0 });
 
   const load = async () => {
     try {
       setLoading(true);
-      const ev = await API.get("/admin/events");
+      const [ev, us] = await Promise.all([
+        API.get("/admin/events"),
+        API.get("/admin/users"),
+      ]);
       setEvents(ev.data);
-
-      const us = await API.get("/admin/users");
       setUsers(us.data);
+      setStats({ totalUsers: us.data.length, totalEvents: ev.data.length });
     } catch (err) {
       console.error("Admin load error:", err);
     } finally {
@@ -32,277 +37,380 @@ export default function AdminPanel() {
 
   if (!user || user.role !== "admin") {
     return (
-      <div style={styles.page}>
-        <h2
-          style={{ color: "#ff6b6b", textAlign: "center", marginTop: "30px" }}
-        >
-          Access Denied
-        </h2>
+      <div style={S.page}>
+        <div style={{ textAlign: "center", marginTop: 80 }}>
+          <h2 style={{ color: "#f85149" }}>Access Denied</h2>
+          <p style={{ color: "#8b949e" }}>You don't have admin permissions.</p>
+        </div>
       </div>
     );
   }
 
-  const submit = async () => {
+  const submitEvent = async () => {
+    if (!form.title || !form.date) return;
     await API.post("/admin/events", form);
     setForm({ title: "", description: "", date: "" });
     load();
   };
 
-  return (
-    <div style={styles.page}>
-      {/* HEADER */}
-      <header style={styles.header}>
-        <h2 style={styles.logo}>Admin Panel</h2>
+  const deleteEvent = async (id) => {
+    if (!window.confirm("Delete this event?")) return;
+    await API.delete(`/admin/events/${id}`);
+    load();
+  };
 
-        <div style={styles.headerRight}>
-          <span style={styles.username}>{user.username}</span>
+  const deleteUser = async (id) => {
+    if (!window.confirm("Delete this user?")) return;
+    await API.delete(`/admin/user/${id}`);
+    load();
+  };
+
+  return (
+    <div style={S.page}>
+      {/* Nav */}
+      <nav style={S.nav}>
+        <div style={S.navL}>
+          <img
+            src={logo}
+            alt="CodeAmigos"
+            style={{
+              height: 28,
+              width: 28,
+              borderRadius: 4,
+              objectFit: "contain",
+            }}
+          />
+          <span
+            style={{
+              marginLeft: 8,
+              fontWeight: 600,
+              fontSize: 16,
+              color: "#f0f6fc",
+            }}
+          >
+            Admin Dashboard
+          </span>
+        </div>
+        <div style={S.navR}>
+          <span style={{ color: "#8b949e", fontSize: 14 }}>
+            {user.username}
+          </span>
           <button
-            style={styles.logoutBtn}
             onClick={() => {
               logout();
-              window.location.href = "/signin";
+              navigate("/signin");
+            }}
+            style={{
+              ...S.navBtn,
+              background: "#da3633",
+              borderColor: "#f85149",
             }}
           >
             Logout
           </button>
         </div>
-      </header>
+      </nav>
 
-      {/* MAIN CONTENT */}
-      <main style={styles.container}>
-        <h1 style={styles.heading}>Admin Dashboard</h1>
+      <div style={S.main}>
+        {/* Stats */}
+        <div style={S.statsRow}>
+          <div style={S.stat}>
+            <span style={S.statNum}>{stats.totalUsers}</span>
+            <span style={S.statLabel}>Users</span>
+          </div>
+          <div style={S.stat}>
+            <span style={S.statNum}>{stats.totalEvents}</span>
+            <span style={S.statLabel}>Events</span>
+          </div>
+        </div>
 
-        {loading && <p style={styles.loading}>Loading...</p>}
+        {/* Tabs */}
+        <div style={S.tabs}>
+          {["events", "users", "create"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{ ...S.tab, ...(tab === t ? S.tabActive : {}) }}
+            >
+              {t === "events"
+                ? "Events"
+                : t === "users"
+                  ? "Users"
+                  : "Create Event"}
+            </button>
+          ))}
+        </div>
 
-        {!loading && (
-          <>
-            {/* ---- GRID SECTIONS ---- */}
-            <div style={styles.grid}>
-              {/* Create Event Card */}
-              <div style={styles.card}>
-                <h2 style={styles.sectionTitle}>Create New Event</h2>
-
-                <input
-                  style={styles.input}
-                  placeholder="Event title"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                />
-
-                <textarea
-                  style={{ ...styles.input, height: 90 }}
-                  placeholder="Event description"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                ></textarea>
-
-                <input
-                  type="date"
-                  style={styles.input}
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                />
-
-                <button style={styles.button} onClick={submit}>
-                  Add Event
-                </button>
-              </div>
-
-              {/* Events List */}
-              <div style={styles.card}>
-                <h2 style={styles.sectionTitle}>Events</h2>
-
-                {events.length === 0 && (
-                  <p style={styles.empty}>No events available.</p>
-                )}
-
-                {events.map((e) => (
-                  <div key={e._id} style={styles.listItem}>
-                    <div>
-                      <strong>{e.title}</strong>
-                      <p style={{ fontSize: 13, color: "#8b949e" }}>
-                        {e.description}
-                      </p>
-                      <small style={{ color: "#58a6ff" }}>{e.date}</small>
-                    </div>
-                    <button
-                      style={styles.deleteBtn}
-                      onClick={() => {
-                        if (window.confirm("Delete this event?")) {
-                          API.delete(`/admin/events/${e._id}`);
-                          load();
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Users List */}
-              <div style={styles.card}>
-                <h2 style={styles.sectionTitle}>Users</h2>
-
-                {users.length === 0 && (
-                  <p style={styles.empty}>No users found.</p>
-                )}
-
-                {users.map((u) => (
-                  <div key={u._id} style={styles.listItem}>
-                    <div>
-                      <strong>{u.username}</strong> <br />
-                      <span style={{ color: "#8b949e" }}>{u.email}</span>
-                    </div>
-
-                    <button
-                      style={styles.deleteBtn}
-                      onClick={() => {
-                        if (window.confirm("Delete this user?")) {
-                          API.delete(`/admin/user/${u._id}`);
-                          load();
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
+        {loading && (
+          <p style={{ color: "#8b949e", textAlign: "center", padding: 40 }}>
+            Loading...
+          </p>
         )}
 
-        <footer style={styles.footer}>
-          © 2025 CodeAmigos — Admin Dashboard
-        </footer>
-      </main>
+        {!loading && tab === "create" && (
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>Create New Event</h3>
+            <input
+              style={S.input}
+              placeholder="Event title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+            <textarea
+              style={{ ...S.input, height: 80, resize: "vertical" }}
+              placeholder="Description (optional)"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+            <input
+              type="date"
+              style={S.input}
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+            <button style={S.greenBtn} onClick={submitEvent}>
+              Create Event
+            </button>
+          </div>
+        )}
+
+        {!loading && tab === "events" && (
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>All Events ({events.length})</h3>
+            {events.length === 0 && (
+              <p style={{ color: "#8b949e" }}>No events yet.</p>
+            )}
+            {events.map((e) => (
+              <div key={e._id} style={S.row}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: "#f0f6fc" }}>
+                    {e.title}
+                  </div>
+                  {e.description && (
+                    <div
+                      style={{ fontSize: 13, color: "#8b949e", marginTop: 2 }}
+                    >
+                      {e.description}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: "#58a6ff", marginTop: 4 }}>
+                    {e.date ? new Date(e.date).toLocaleDateString() : "No date"}
+                  </div>
+                </div>
+                <button style={S.delBtn} onClick={() => deleteEvent(e._id)}>
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && tab === "users" && (
+          <div style={S.card}>
+            <h3 style={S.cardTitle}>All Users ({users.length})</h3>
+            {users.length === 0 && (
+              <p style={{ color: "#8b949e" }}>No users found.</p>
+            )}
+            {users.map((u) => (
+              <div key={u._id} style={S.row}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    flex: 1,
+                  }}
+                >
+                  <div style={S.avatar}>
+                    {u.avatar ? (
+                      <img
+                        src={u.avatar}
+                        alt=""
+                        style={{ width: 32, height: 32, borderRadius: "50%" }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: "#30363d",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 14,
+                          color: "#8b949e",
+                        }}
+                      >
+                        {u.username?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#f0f6fc" }}>
+                      {u.username}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#8b949e" }}>
+                      {u.email}
+                    </div>
+                  </div>
+                  {u.role === "admin" && <span style={S.badge}>admin</span>}
+                </div>
+                {u._id !== user.id && (
+                  <button style={S.delBtn} onClick={() => deleteUser(u._id)}>
+                    Delete
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-/* ----------- STYLES (RESPONSIVE) ------------- */
-
-const styles = {
+const S = {
   page: {
     background: "#0d1117",
     minHeight: "100vh",
     color: "#c9d1d9",
-    fontFamily: "Inter, sans-serif",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
   },
-
-  header: {
+  nav: {
     background: "#161b22",
     borderBottom: "1px solid #30363d",
-    padding: "14px 20px",
+    padding: "12px 24px",
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     position: "sticky",
     top: 0,
     zIndex: 50,
-    flexWrap: "wrap",
   },
-
-  logo: { margin: 0, fontSize: "22px", color: "#58a6ff" },
-
-  headerRight: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-
-  username: {
-    fontSize: "15px",
-    opacity: 0.8,
-  },
-
-  logoutBtn: {
-    padding: "8px 14px",
-    borderRadius: "6px",
-    background: "#b42323",
-    border: "1px solid #da3633",
-    color: "white",
+  navL: { display: "flex", alignItems: "center" },
+  navR: { display: "flex", alignItems: "center", gap: 12 },
+  navBtn: {
+    padding: "5px 12px",
+    fontSize: 13,
+    fontWeight: 500,
+    color: "#f0f6fc",
+    background: "#21262d",
+    border: "1px solid #30363d",
+    borderRadius: 6,
     cursor: "pointer",
-    fontWeight: 600,
   },
-
-  container: {
-    width: "95%",
-    maxWidth: "1100px",
-    margin: "30px auto",
+  main: {
+    maxWidth: 800,
+    margin: "24px auto",
+    padding: "0 16px",
   },
-
-  heading: {
-    fontSize: "30px",
-    marginBottom: "20px",
+  statsRow: {
+    display: "flex",
+    gap: 16,
+    marginBottom: 24,
+  },
+  stat: {
+    flex: 1,
+    background: "#161b22",
+    border: "1px solid #30363d",
+    borderRadius: 6,
+    padding: "20px",
     textAlign: "center",
   },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-    gap: "20px",
+  statNum: {
+    display: "block",
+    fontSize: 32,
+    fontWeight: 600,
+    color: "#58a6ff",
   },
-
+  statLabel: {
+    fontSize: 14,
+    color: "#8b949e",
+  },
+  tabs: {
+    display: "flex",
+    borderBottom: "1px solid #30363d",
+    marginBottom: 16,
+  },
+  tab: {
+    padding: "8px 16px",
+    fontSize: 14,
+    background: "none",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    color: "#8b949e",
+    cursor: "pointer",
+    fontWeight: 500,
+  },
+  tabActive: {
+    color: "#f0f6fc",
+    borderBottomColor: "#f78166",
+  },
   card: {
     background: "#161b22",
     border: "1px solid #30363d",
-    borderRadius: "12px",
-    padding: "20px",
+    borderRadius: 6,
+    padding: 20,
   },
-
-  sectionTitle: { fontSize: "20px", marginBottom: "10px" },
-
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 600,
+    color: "#f0f6fc",
+    marginTop: 0,
+    marginBottom: 16,
+  },
   input: {
     width: "100%",
-    padding: "12px",
-    borderRadius: "6px",
-    border: "1px solid #30363d",
+    padding: "5px 12px",
+    fontSize: 14,
+    color: "#f0f6fc",
     background: "#0d1117",
-    color: "#c9d1d9",
-    marginBottom: "10px",
+    border: "1px solid #30363d",
+    borderRadius: 6,
+    marginBottom: 12,
+    outline: "none",
+    boxSizing: "border-box",
   },
-
-  button: {
-    width: "100%",
-    padding: "10px",
+  greenBtn: {
+    padding: "5px 16px",
+    fontSize: 14,
+    fontWeight: 500,
+    color: "#fff",
     background: "#238636",
     border: "1px solid #2ea043",
-    borderRadius: "6px",
-    color: "#fff",
+    borderRadius: 6,
     cursor: "pointer",
-    fontWeight: 600,
-    marginTop: 5,
   },
-
-  listItem: {
-    background: "#0d1117",
-    border: "1px solid #30363d",
-    padding: "14px",
-    borderRadius: "6px",
-    marginBottom: "8px",
+  row: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    flexWrap: "wrap",
+    padding: "12px 0",
+    borderBottom: "1px solid #21262d",
+    gap: 12,
   },
-
-  deleteBtn: {
-    background: "#b42323",
-    border: "1px solid #da3633",
-    padding: "6px 10px",
-    borderRadius: "6px",
-    color: "#fff",
+  delBtn: {
+    padding: "3px 12px",
+    fontSize: 12,
+    color: "#f85149",
+    background: "transparent",
+    border: "1px solid #f85149",
+    borderRadius: 6,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
-
-  footer: {
-    marginTop: "30px",
-    textAlign: "center",
+  badge: {
+    padding: "0 7px",
+    fontSize: 12,
+    fontWeight: 500,
+    lineHeight: "18px",
+    borderRadius: 10,
+    border: "1px solid #30363d",
     color: "#8b949e",
   },
-
-  loading: { textAlign: "center", padding: "20px" },
+  avatar: {},
 };

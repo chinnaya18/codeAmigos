@@ -1,28 +1,37 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
-import { AuthContext } from "../context/AuthContext";
 import logo from "./logodraft.png";
 
-export default function SignUp() {
-  const { login } = useContext(AuthContext);
+export default function ForgotPassword() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    emailOrUsername: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    setMsg("");
+    if (form.password !== form.confirmPassword)
+      return setErr("Passwords do not match.");
     if (form.password.length < 6)
       return setErr("Password must be at least 6 characters.");
     setLoading(true);
     try {
-      const res = await API.post("/auth/signup", form);
-      login(res.data.token, res.data.user);
-      navigate("/home");
-    } catch (error) {
-      setErr(error.response?.data?.msg || "Signup failed");
+      const res = await API.post("/auth/forgot-password", {
+        emailOrUsername: form.emailOrUsername,
+        password: form.password,
+      });
+      setMsg(res.data.msg);
+      setTimeout(() => navigate("/signin"), 1500);
+    } catch (e) {
+      setErr(e.response?.data?.msg || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -50,36 +59,24 @@ export default function SignUp() {
 
       <div style={S.center}>
         <div style={S.card}>
-          <h1 style={S.title}>Create your account</h1>
+          <h1 style={S.title}>Reset your password</h1>
 
           {err && <div style={S.error}>{err}</div>}
+          {msg && <div style={S.success}>{msg}</div>}
 
           <form onSubmit={submit}>
-            <label style={S.label}>Username</label>
+            <label style={S.label}>Username or email address</label>
             <input
               style={S.input}
-              placeholder="Pick a username"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              value={form.emailOrUsername}
+              onChange={(e) =>
+                setForm({ ...form, emailOrUsername: e.target.value })
+              }
               required
-              autoComplete="username"
             />
 
             <label style={{ ...S.label, marginTop: 16, display: "block" }}>
-              Email address
-            </label>
-            <input
-              style={S.input}
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              autoComplete="email"
-            />
-
-            <label style={{ ...S.label, marginTop: 16, display: "block" }}>
-              Password
+              New password
             </label>
             <input
               type="password"
@@ -88,19 +85,29 @@ export default function SignUp() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
-              autoComplete="new-password"
             />
 
-            <p style={S.hint}>Make sure it's at least 6 characters.</p>
+            <label style={{ ...S.label, marginTop: 16, display: "block" }}>
+              Confirm new password
+            </label>
+            <input
+              type="password"
+              style={S.input}
+              value={form.confirmPassword}
+              onChange={(e) =>
+                setForm({ ...form, confirmPassword: e.target.value })
+              }
+              required
+            />
 
             <button type="submit" disabled={loading} style={S.btn}>
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? "Resetting..." : "Reset password"}
             </button>
           </form>
         </div>
 
         <div style={S.bottomCard}>
-          Already have an account?{" "}
+          Remembered your password?{" "}
           <Link to="/signin" style={S.link}>
             Sign in
           </Link>
@@ -178,15 +185,9 @@ const S = {
     boxSizing: "border-box",
     height: 32,
   },
-  hint: {
-    fontSize: 12,
-    color: "#8b949e",
-    marginTop: 4,
-    marginBottom: 0,
-  },
   btn: {
     width: "100%",
-    marginTop: 16,
+    marginTop: 20,
     padding: "5px 16px",
     fontSize: 14,
     fontWeight: 500,
@@ -214,6 +215,16 @@ const S = {
     background: "rgba(248,81,73,0.1)",
     border: "1px solid #f85149",
     color: "#f85149",
+    padding: "8px 12px",
+    borderRadius: 6,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  success: {
+    background: "rgba(46,160,67,0.15)",
+    border: "1px solid #2ea043",
+    color: "#3fb950",
     padding: "8px 12px",
     borderRadius: 6,
     fontSize: 14,

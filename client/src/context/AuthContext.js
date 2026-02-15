@@ -25,31 +25,36 @@ export const AuthProvider = ({ children }) => {
       username: userObj.username,
       email: userObj.email,
       role: userObj.role || "user",
+      avatar: userObj.avatar || "",
     };
 
-    // store in localStorage
     localStorage.setItem("gh_token", token);
     localStorage.setItem("gh_user", JSON.stringify(fullUser));
 
-    // update state
     setTokenState(token);
     setUser(fullUser);
-
-    // attach token to axios
     applyTokenToAxios(token);
+  };
+
+  // UPDATE USER STATE (e.g. after avatar upload)
+  const updateUser = (updates) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem("gh_user", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   // LOGOUT FUNCTION
   const logout = () => {
     localStorage.removeItem("gh_token");
     localStorage.removeItem("gh_user");
-
     setTokenState(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
